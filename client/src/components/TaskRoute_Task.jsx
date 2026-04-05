@@ -5,22 +5,29 @@ import { InsideTask } from './InsideTask';
 
 export const TaskRouteTask = memo(() => {
 
+  const API = "https://focus-timer-app-2.onrender.com"; // ✅ YOUR BACKEND
+
   const [isFocused, setIsFocused] = useState(false);
   const [input, setInput] = useState("");
   const [tasks, setTasks] = useState([]);
 
   // ✅ FETCH tasks from backend
-  useEffect(() => {
-    fetch("https://your-backend-url.up.railway.app/tasks")
+  const fetchTasks = () => {
+    fetch(`${API}/tasks`)
       .then(res => res.json())
-      .then(data => setTasks(data));
+      .then(data => setTasks(data))
+      .catch(err => console.error("Fetch error:", err));
+  };
+
+  useEffect(() => {
+    fetchTasks();
   }, []);
 
   // ✅ ADD TASK (POST)
   const handleAddTask = () => {
     if (input.trim() === "") return;
 
-    fetch("https://your-backend-url.up.railway.app/tasks", {
+    fetch(`${API}/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -31,15 +38,16 @@ export const TaskRouteTask = memo(() => {
       })
     })
       .then(res => res.json())
-      .then(newTask => {
-        setTasks(prev => [...prev, newTask]);
+      .then(() => {
+        fetchTasks(); // ✅ refresh from backend
         setInput("");
-      });
+      })
+      .catch(err => console.error("Add error:", err));
   };
 
   // ✅ TOGGLE TASK (PUT)
   const toggleTask = (task) => {
-    fetch(`https://your-backend-url.up.railway.app/tasks/${task.id}`, {
+    fetch(`${API}/tasks/${task.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -50,18 +58,21 @@ export const TaskRouteTask = memo(() => {
       })
     })
       .then(res => res.json())
-      .then(updated => {
-        setTasks(tasks.map(t => t.id === updated.id ? updated : t));
-      });
+      .then(() => {
+        fetchTasks(); // ✅ keep sync
+      })
+      .catch(err => console.error("Toggle error:", err));
   };
 
   // ✅ DELETE TASK (DELETE)
   const deleteTask = (id) => {
-    fetch(`https://your-backend-url.up.railway.app/tasks/${id}`, {
+    fetch(`${API}/tasks/${id}`, {
       method: "DELETE"
-    }).then(() => {
-      setTasks(tasks.filter(task => task.id !== id));
-    });
+    })
+      .then(() => {
+        fetchTasks(); // ✅ keep sync
+      })
+      .catch(err => console.error("Delete error:", err));
   };
 
   return (
@@ -115,7 +126,6 @@ export const TaskRouteTask = memo(() => {
       {/* RIGHT CARD */}
       <div className="bg-[#161616] flex-1 h-[470px] rounded-2xl p-6 flex flex-col items-center justify-center border-2 border-gray-800">
         
-        {/* ✅ REMOVED task="DSA" */}
         <Timer initialTime={50 * 60} />
 
       </div>
