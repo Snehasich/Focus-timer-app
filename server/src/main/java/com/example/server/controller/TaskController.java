@@ -3,10 +3,10 @@ package com.example.server.controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.example.server.Service.TaskService;
 import org.springframework.web.bind.annotation.*;
 import com.example.server.entity.Task;
+import com.example.server.service.TaskService;
+
 import java.util.*;
 
 @RequestMapping("/tasks")

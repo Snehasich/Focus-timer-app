@@ -4,38 +4,38 @@ import { TaskRoute } from "./components/TaskRoute";
 import { TaskRouteTask } from "./components/TaskRoute_Task";
 import { Timer } from "./components/Timer/Timer";
 import { StopWatch } from "./components/Timer/StopWatch";
-import { useEffect } from "react";
 
 function App() {
-
   return (
-    
     <BrowserRouter>
-      <div className="bg-[#252525] h-screen w-full flex">
+      <div className="bg-[#252525] min-h-screen w-full flex">
 
-        {/* Sidebar (always visible) */}
+        {/* Sidebar */}
         <Side />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col p-4 gap-4">
 
-
-          {/* 🔥 THIS is where pages change */}
           <Routes>
-            <Route path="/" element={
-              <>
-                <TaskRoute />
-                <TaskRouteTask />
-              </>
-            } />
-            <Route 
-              path="/timer" 
+            <Route
+              path="/"
+              element={
+                <>
+                  <TaskRoute />
+                  <TaskRouteTask />
+                </>
+              }
+            />
+
+            <Route
+              path="/timer"
               element={
                 <div className="flex flex-col justify-center items-center bg-gray-900 h-full rounded-2xl">
                   <Timer />
                 </div>
-              } 
+              }
             />
+
             <Route
               path="/stopwatch"
               element={
@@ -44,10 +44,18 @@ function App() {
                 </div>
               }
             />
+
+            <Route
+              path="/dashboard"
+              element={
+                <div className="bg-gray-900 h-full rounded-2xl text-white flex items-center justify-center">
+                  Dashboard coming soon 📊
+                </div>
+              }
+            />
           </Routes>
 
         </div>
-
       </div>
     </BrowserRouter>
   );

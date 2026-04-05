@@ -2,96 +2,134 @@ import { useState, useRef, useEffect } from "react";
 import { RotateCcw, Play, Pause } from "lucide-react";
 
 export const Timer = ({ initialTime = 50 * 60 }) => {
-  const [time, setTime] = useState(initialTime);
-  const [isRunning, setIsRunning] = useState(false);
-  const [mode, setMode] = useState("work"); // "work" | "break"
-
   const intervalRef = useRef(null);
-  const alarmRef = useRef(new Audio("/alarm.mp3"));
 
-  // ⏱ 1. Interval (ONLY decrease time)
+  // ✅ Load from sessionStorage (persists across routes)
+  const [time, setTime] = useState(() => {
+    const saved = JSON.parse(sessionStorage.getItem("timerState"));
+    return saved?.time ?? initialTime;
+  });
+
+  const [isRunning, setIsRunning] = useState(() => {
+    const saved = JSON.parse(sessionStorage.getItem("timerState"));
+    return saved?.isRunning ?? false;
+  });
+
+  const [startedAt, setStartedAt] = useState(() => {
+    const saved = JSON.parse(sessionStorage.getItem("timerState"));
+    return saved?.startedAt ?? null;
+  });
+
+  // ✅ Save state (for route switching)
   useEffect(() => {
-    if (isRunning) {
+    sessionStorage.setItem(
+      "timerState",
+      JSON.stringify({ time, isRunning, startedAt })
+    );
+  }, [time, isRunning, startedAt]);
+
+  // ✅ Clear ONLY on refresh / tab close
+  useEffect(() => {
+    const handleUnload = () => {
+      sessionStorage.removeItem("timerState");
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, []);
+
+  // ✅ Accurate timer (no drift)
+  useEffect(() => {
+    if (isRunning && startedAt) {
       intervalRef.current = setInterval(() => {
-        setTime((prev) => prev - 1);
+        const now = new Date();
+
+        const elapsed = Math.floor(
+          (now - new Date(startedAt)) / 1000
+        );
+
+        const newTime = initialTime - elapsed;
+
+        if (newTime <= 0) {
+          clearInterval(intervalRef.current);
+          setTime(0);
+          setIsRunning(false);
+        } else {
+          setTime(newTime);
+        }
       }, 1000);
     }
 
-    return () => {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    };
-  }, [isRunning]);
+    return () => clearInterval(intervalRef.current);
+  }, [isRunning, startedAt, initialTime]);
 
-  // 🔔 2. When time hits 0 (IMPORTANT FIX)
-  useEffect(() => {
-    if (time === 0 && isRunning) {
-      clearInterval(intervalRef.current);
+  // 🧠 Save focus data (keep in localStorage)
+  const saveSession = () => {
+    if (!startedAt) return;
 
-      // 🔔 play alarm
-      alarmRef.current.currentTime = 0;
-      alarmRef.current.play();
+    const sessionSeconds = Math.floor(
+      (new Date() - new Date(startedAt)) / 1000
+    );
 
-      // stop timer
+    if (sessionSeconds <= 0) return;
+
+    const today = new Date().toISOString().split("T")[0];
+    const data = JSON.parse(localStorage.getItem("focusData")) || {};
+
+    data[today] = (data[today] || 0) + sessionSeconds;
+
+    localStorage.setItem("focusData", JSON.stringify(data));
+  };
+
+  // ▶ Start / Pause
+  const handleStartPause = () => {
+    if (isRunning) {
+      saveSession();
       setIsRunning(false);
-
-      // switch mode + set next time
-      if (mode === "work") {
-        setMode("break");
-        setTime(10 * 60); // break = 10 min
-      } else {
-        setMode("work");
-        setTime(initialTime);
-      }
+    } else {
+      const now = new Date();
+      setStartedAt(now);
+      setIsRunning(true);
     }
-  }, [time]);
+  };
+
+  // 🔄 Reset
+  const handleReset = () => {
+    saveSession();
+
+    clearInterval(intervalRef.current);
+    setIsRunning(false);
+    setTime(initialTime);
+    setStartedAt(null);
+
+    sessionStorage.removeItem("timerState");
+  };
 
   // ⏱ Format time
   const formatTime = () => {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
+
     return `${String(minutes).padStart(2, "0")}:${String(
       seconds
     ).padStart(2, "0")}`;
   };
 
-  // ▶️ Start / Pause
-  const handleStartPause = () => {
-    setIsRunning((prev) => !prev);
-  };
-
-  // 🔄 Reset
-  const handleReset = () => {
-    clearInterval(intervalRef.current);
-    setIsRunning(false);
-    setMode("work");
-    setTime(initialTime);
-
-    alarmRef.current.pause();
-    alarmRef.current.currentTime = 0;
-  };
-
   return (
     <>
-      {/* Timer Circle */}
-      <div
-        className={`w-[250px] h-[250px] rounded-full border-4 
-        ${mode === "work" ? "border-blue-500" : "border-green-500"}
-        flex items-center justify-center text-white text-5xl font-extrabold tracking-wider`}
-      >
+      <div className="w-[250px] h-[250px] rounded-full border-4 border-blue-500 flex items-center justify-center text-white text-5xl font-extrabold">
         {formatTime()}
       </div>
 
-      {/* Title */}
-      <h2 className="text-gray-400 mt-4 text-lg">
-        {mode === "work" ? "Focus Timer" : "Break Time ☕"}
-      </h2>
+      <h2 className="text-gray-400 mt-4 text-lg">Focus Timer</h2>
 
-      {/* Buttons */}
-      <div className="flex gap-6 mt-6 text-lg font-semibold">
+      <div className="flex gap-6 mt-6">
         <button
           onClick={handleStartPause}
-          className="bg-blue-600 px-6 py-2 rounded-full flex items-center gap-2 hover:scale-95 transition-transform"
+          className="bg-blue-600 px-6 py-2 rounded-full flex items-center gap-2"
         >
           {isRunning ? <Pause /> : <Play />}
           {isRunning ? "Pause" : "Start"}
@@ -99,9 +137,9 @@ export const Timer = ({ initialTime = 50 * 60 }) => {
 
         <button
           onClick={handleReset}
-          className="bg-red-600 px-6 py-2 rounded-full flex items-center gap-2 hover:scale-95 transition-transform"
+          className="bg-red-600 px-6 py-2 rounded-full flex items-center gap-2"
         >
-          <RotateCcw className="h-5" />
+          <RotateCcw />
           Reset
         </button>
       </div>
