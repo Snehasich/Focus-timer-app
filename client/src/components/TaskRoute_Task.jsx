@@ -11,7 +11,7 @@ export const TaskRouteTask = memo(() => {
 
   // ✅ FETCH tasks from backend
   useEffect(() => {
-    fetch("http://localhost:8080/tasks")
+    fetch("https://your-backend-url.up.railway.app/tasks")
       .then(res => res.json())
       .then(data => setTasks(data));
   }, []);
@@ -20,7 +20,7 @@ export const TaskRouteTask = memo(() => {
   const handleAddTask = () => {
     if (input.trim() === "") return;
 
-    fetch("http://localhost:8080/tasks", {
+    fetch("https://your-backend-url.up.railway.app/tasks", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -39,7 +39,7 @@ export const TaskRouteTask = memo(() => {
 
   // ✅ TOGGLE TASK (PUT)
   const toggleTask = (task) => {
-    fetch(`http://localhost:8080/tasks/${task.id}`, {
+    fetch(`https://your-backend-url.up.railway.app/tasks/${task.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -57,7 +57,7 @@ export const TaskRouteTask = memo(() => {
 
   // ✅ DELETE TASK (DELETE)
   const deleteTask = (id) => {
-    fetch(`http://localhost:8080/tasks/${id}`, {
+    fetch(`https://your-backend-url.up.railway.app/tasks/${id}`, {
       method: "DELETE"
     }).then(() => {
       setTasks(tasks.filter(task => task.id !== id));
