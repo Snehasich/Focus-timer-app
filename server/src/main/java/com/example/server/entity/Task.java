@@ -13,7 +13,10 @@ public class Task {
 
     private boolean completed;
 
-    // ✅ Getter & Setter
+    // 🔐 VERY IMPORTANT → owner of task
+    private String username;
+
+    // ✅ Getters & Setters
 
     public Long getId() {
         return id;
@@ -33,5 +36,13 @@ public class Task {
 
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }
