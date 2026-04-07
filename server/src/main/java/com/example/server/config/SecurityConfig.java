@@ -74,7 +74,8 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(List.of(
             "http://localhost:5173",
-            "https://focus-timer-app-vert.vercel.app"
+            "https://focus-timer-app-vert.vercel.app",
+            "https://focus-timer-p0pdjmp4z-snehasichs-projects.vercel.app"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
