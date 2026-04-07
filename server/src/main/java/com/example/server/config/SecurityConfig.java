@@ -31,30 +31,29 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    // 🔐 SECURITY CONFIG
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(Customizer.withDefaults()) // ✅ enable CORS
+            .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
 
-                    // ✅ VERY IMPORTANT → allow preflight (OPTIONS)
+                    // ✅ allow preflight requests
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                     // ✅ allow auth endpoints
                     .requestMatchers("/register", "/login").permitAll()
 
-                    // 🔒 protect everything else
+                    // 🔒 protect others
                     .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authenticationProvider()) // ✅ important
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // 🔑 AUTH PROVIDER
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -63,13 +62,12 @@ public class SecurityConfig {
         return provider;
     }
 
-    // 🔐 AUTH MANAGER
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // 🌍 CORS CONFIG (VERY IMPORTANT)
+    // 🌍 CORS CONFIG
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -78,6 +76,7 @@ public class SecurityConfig {
             "http://localhost:5173",
             "https://focus-timer-app-vert.vercel.app"
         ));
+
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
