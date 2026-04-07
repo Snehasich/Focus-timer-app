@@ -1,5 +1,6 @@
 package com.example.server.config;
 
+import com.example.server.service.JWTService;
 import com.example.server.service.MyUserDetailsService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -14,8 +15,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-import com.example.server.service.JWTService;
-
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -23,7 +22,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private JWTService jwtService;
 
     @Autowired
-    ApplicationContext context;
+    private ApplicationContext context;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -31,29 +30,31 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 🔥 VERY IMPORTANT FIX
         String path = request.getServletPath();
 
-        if (path.startsWith("/login") || path.startsWith("/register")) {
+        // ✅ FIX: skip auth endpoints completely
+        if (path.equals("/login") || path.equals("/register")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 🔐 JWT logic
         String authHeader = request.getHeader("Authorization");
         String token = null;
         String username = null;
 
+        // ✅ extract token safely
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
 
             try {
-                username = jwtService.extractUserName(token); // ✅ FIXED
+                username = jwtService.extractUserName(token);
             } catch (Exception e) {
+                // invalid token → ignore
                 username = null;
             }
         }
 
+        // ✅ validate token and set authentication
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails = context

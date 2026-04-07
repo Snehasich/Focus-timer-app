@@ -13,7 +13,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -33,22 +32,29 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
+            .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
-            .csrf(AbstractHttpConfigurer::disable)
+
             .authorizeHttpRequests(auth -> auth
 
-                    // ✅ allow preflight requests
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // ✅ allow preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                    // ✅ allow auth endpoints
-                    .requestMatchers("/register", "/login").permitAll()
+                // ✅ PUBLIC ENDPOINTS
+                .requestMatchers("/register", "/login").permitAll()
 
-                    // 🔒 protect others
-                    .anyRequest().authenticated()
+                // 🔒 secure others
+                .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider()) // ✅ important
+
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
+            .authenticationProvider(authenticationProvider())
+
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -67,20 +73,19 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // 🌍 CORS CONFIG
+    // 🌍 FINAL CORS CONFIG (IMPORTANT 🔥)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of(
-            "http://localhost:5173",
-            "https://focus-timer-app-vert.vercel.app",
-            "https://focus-timer-p0pdjmp4z-snehasichs-projects.vercel.app"
-        ));
+        // ✅ use patterns (fixes Vercel dynamic URLs)
+        config.setAllowedOriginPatterns(List.of("*"));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+
         config.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
