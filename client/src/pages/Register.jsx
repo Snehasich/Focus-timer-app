@@ -15,8 +15,10 @@ function Register() {
 
     try {
       await registerUser(user);
+
       alert("Registered successfully");
-      navigate("/");
+
+      navigate("/login"); // ✅ FIXED
     } catch (err) {
       alert("Registration failed");
     }
@@ -24,47 +26,29 @@ function Register() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-900">
-      
-      <div className="bg-gray-800 p-8 rounded-2xl shadow-lg w-80">
-        
-        <h2 className="text-white text-2xl font-semibold mb-6 text-center">
-          Create Account
-        </h2>
+      <div className="bg-gray-800 p-8 rounded-2xl w-80 text-white">
+        <h2 className="text-2xl mb-6 text-center">Register</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          
           <input
-            className="p-2 rounded bg-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Username"
+            className="p-2 bg-gray-700"
             onChange={(e) =>
               setUser({ ...user, username: e.target.value })
             }
           />
 
           <input
-            className="p-2 rounded bg-gray-700 text-white outline-none focus:ring-2 focus:ring-blue-500"
             type="password"
             placeholder="Password"
+            className="p-2 bg-gray-700"
             onChange={(e) =>
               setUser({ ...user, password: e.target.value })
             }
           />
 
-          <button
-            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded transition duration-200"
-          >
-            Register
-          </button>
-
+          <button className="bg-green-500 p-2">Register</button>
         </form>
-
-        <p className="text-gray-400 mt-4 text-sm text-center">
-          Already have an account?{" "}
-          <a href="/login" className="text-blue-400 hover:underline">
-            Login
-          </a>
-        </p>
-
       </div>
     </div>
   );

@@ -1,10 +1,8 @@
-import axios from "axios";
-
-const API = "https://focus-timer-app-2.onrender.com/";
+import instance from "./axiosInstance";
 
 // ✅ LOGIN
 export const loginUser = async (user) => {
-  const res = await axios.post(API + "login", user);
+  const res = await instance.post("/login", user);
 
   if (res.data.token) {
     localStorage.setItem("token", res.data.token);
@@ -13,7 +11,12 @@ export const loginUser = async (user) => {
   return res;
 };
 
-// ✅ REGISTER (THIS IS MISSING IN YOUR CODE ❌)
+// ✅ REGISTER
 export const registerUser = (user) => {
-  return axios.post(API + "register", user);
+  return instance.post("/register", user);
+};
+
+// ✅ LOGOUT
+export const logout = () => {
+  localStorage.removeItem("token");
 };
