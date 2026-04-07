@@ -4,9 +4,14 @@ import jakarta.persistence.*;
 
 @Entity
 public class Users {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ FIXED
     private int id;
+
+    @Column(unique = true) // ✅ FIXED
     private String username;
+
     private String password;
 
     public int getId() {
@@ -38,7 +43,6 @@ public class Users {
         return "Users{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
                 '}';
     }
 }

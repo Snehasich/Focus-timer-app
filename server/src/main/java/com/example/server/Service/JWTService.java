@@ -6,44 +6,37 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import javax.crypto.*;
-import java.security.*;
+
+import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.function.Function;
 
 @Service
 public class JWTService {
 
-    private String secretKey = "";
+    // ✅ FIXED: constant secret key (must be long enough)
+    private final String secretKey = "my-super-secret-key-my-super-secret-key";
 
-    public JWTService() {
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");   // Creates a key generator for HMAC SHA-256 algorithm.
-            SecretKey sk = keyGen.generateKey();        // Generates a random secret key.
-            secretKey = Base64.getEncoder().encodeToString(sk.getEncoded());    //convert key to bytes, encode into BASE64, Store as String
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+    public String generateToken(String username) {
 
-    }
+        Map<String, Object> claims = new HashMap<>();
 
-    public String generateToken(String username) {          // here it will generate a JWT token for login
-
-        Map<String, Object> claims = new HashMap<>();       // Claims = extra data in JWT.
-
-
-        return Jwts.builder()               // start building token
-                .setClaims(claims)          // Adds extra info.
-                .setSubject(username)       // Subject = main identity of token, Usually username.
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 60 * 60 * 30))
-                .signWith(getKey())         // Signs token with secret key.
-                .compact();                 // Converts everything into single String, header.payload.signature
 
+                // ✅ FIXED: correct expiration (30 hours)
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
+
+                .signWith(getKey())
+                .compact();
     }
 
     private SecretKey getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);        // convert String into Bytes, bec hmacSha needs in bytes so
+        byte[] keyBytes = Decoders.BASE64.decode(
+                Base64.getEncoder().encodeToString(secretKey.getBytes())
+        );
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

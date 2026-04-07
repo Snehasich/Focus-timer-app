@@ -40,12 +40,19 @@ public class UserService {
     }
 
     public String verify(Users user) {
-        Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+        Authentication authentication = authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        user.getUsername(),
+                        user.getPassword()
+                )
+        );
 
-        if(authentication.isAuthenticated()) {
+        if (authentication.isAuthenticated()) {
             return jwtService.generateToken(user.getUsername());
         }
-        return "Fail";
+
+        // ✅ FIXED: proper error instead of "Fail"
+        throw new RuntimeException("Invalid username or password");
     }
 
 }
