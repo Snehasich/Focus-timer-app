@@ -1,133 +1,76 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect } from "react";
+import instance from "../api/axiosInstance";
 import { Timer } from "./Timer/Timer";
 import { Plus, ArrowUp } from "lucide-react";
-import { InsideTask } from './InsideTask';
+import { InsideTask } from "./InsideTask";
 
 export const TaskRouteTask = memo(() => {
-
-  const API = "https://focus-timer-app-2.onrender.com"; // ✅ YOUR BACKEND
-
   const [isFocused, setIsFocused] = useState(false);
   const [input, setInput] = useState("");
   const [tasks, setTasks] = useState([]);
 
-  // ✅ FETCH tasks from backend
+  // ✅ GET
   const fetchTasks = () => {
-    fetch(`${API}/tasks`)
-      .then(res => res.json())
-      .then(data => setTasks(data))
-      .catch(err => console.error("Fetch error:", err));
+    instance.get("/tasks")
+      .then(res => setTasks(res.data))
+      .catch(console.error);
   };
 
   useEffect(() => {
     fetchTasks();
   }, []);
 
-  // ✅ ADD TASK (POST)
+  // ✅ ADD
   const handleAddTask = () => {
-    if (input.trim() === "") return;
+    if (!input.trim()) return;
 
-    fetch(`${API}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        text: input,
-        completed: false
-      })
-    })
-      .then(res => res.json())
-      .then(() => {
-        fetchTasks(); // ✅ refresh from backend
-        setInput("");
-      })
-      .catch(err => console.error("Add error:", err));
+    instance.post("/tasks", {
+      text: input,
+      completed: false
+    }).then(() => {
+      fetchTasks();
+      setInput("");
+    });
   };
 
-  // ✅ TOGGLE TASK (PUT)
+  // ✅ UPDATE
   const toggleTask = (task) => {
-    fetch(`${API}/tasks/${task.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        ...task,
-        completed: !task.completed
-      })
-    })
-      .then(res => res.json())
-      .then(() => {
-        fetchTasks(); // ✅ keep sync
-      })
-      .catch(err => console.error("Toggle error:", err));
+    instance.put(`/tasks/${task.id}`, {
+      ...task,
+      completed: !task.completed
+    }).then(fetchTasks);
   };
 
-  // ✅ DELETE TASK (DELETE)
+  // ✅ DELETE
   const deleteTask = (id) => {
-    fetch(`${API}/tasks/${id}`, {
-      method: "DELETE"
-    })
-      .then(() => {
-        fetchTasks(); // ✅ keep sync
-      })
-      .catch(err => console.error("Delete error:", err));
+    instance.delete(`/tasks/${id}`)
+      .then(fetchTasks);
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 w-[96%] mt-3">
+    <div className="flex gap-6 w-[96%] mt-3">
 
-      {/* LEFT CARD */}
-      <div className="bg-[#161616] w-full lg:w-[370px] h-[470px] rounded-2xl p-4 border-2 border-gray-800 flex flex-col justify-between">
+      <div className="bg-[#161616] w-[370px] h-[470px] p-4 rounded-2xl">
+        <header className="text-white text-xl">Today</header>
 
-        <header className="text-white font-bold mb-2 text-xl">
-          Today
-        </header>
+        <InsideTask
+          tasks={tasks}
+          toggleTask={toggleTask}
+          deleteTask={deleteTask}
+        />
 
-        {/* TASK LIST */}
-        <div className="flex-1 overflow-y-auto">
-          <InsideTask 
-            tasks={tasks}
-            toggleTask={toggleTask}
-            deleteTask={deleteTask}
-          />
-        </div>
-
-        {/* INPUT */}
-        <div className="text-gray-400 border-2 rounded-2xl bg-[#2b2a2a] flex items-center hover:border-blue-400 focus-within:border-blue-500 transition-all">
-
-          {!isFocused && <Plus className="ml-3" />}
-
+        <div className="flex mt-3">
           <input
-            type="text"
-            placeholder="Add Task"
-            className="flex-1 text-white p-3 bg-transparent outline-none"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAddTask();
-            }}
+            className="flex-1 p-2 bg-gray-800 text-white"
           />
-
-          {isFocused && (
-            <ArrowUp
-              className="mr-3 cursor-pointer"
-              onClick={handleAddTask}
-            />
-          )}
-
+          <button onClick={handleAddTask}>Add</button>
         </div>
-
       </div>
 
-      {/* RIGHT CARD */}
-      <div className="bg-[#161616] flex-1 h-[470px] rounded-2xl p-6 flex flex-col items-center justify-center border-2 border-gray-800">
-        
+      <div className="flex-1">
         <Timer initialTime={50 * 60} />
-
       </div>
 
     </div>

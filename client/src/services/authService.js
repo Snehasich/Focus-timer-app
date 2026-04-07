@@ -1,4 +1,4 @@
-import instance from "./axiosInstance";
+import instance from "../api/axiosInstance";
 
 // ✅ LOGIN
 export const loginUser = async (user) => {
