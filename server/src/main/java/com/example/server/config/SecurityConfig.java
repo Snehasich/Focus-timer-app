@@ -34,22 +34,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .securityMatcher("/**") // 🔥 VERY IMPORTANT
+
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
 
             .authorizeHttpRequests(auth -> auth
 
-                    // ✅ allow CORS preflight
+                    // ✅ allow preflight
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                    // ✅ VERY IMPORTANT → allow POST auth endpoints
-                    .requestMatchers(HttpMethod.POST, "/register", "/login").permitAll()
+                    // ✅ FULLY OPEN AUTH APIs
+                    .requestMatchers("/register", "/login").permitAll()
 
-                    // ✅ also allow any variation
+                    // 🔥 THIS LINE FIXES 403
                     .requestMatchers("/register/**", "/login/**").permitAll()
 
-                    // 🔒 everything else secure
+                    // 🔒 protect others
                     .anyRequest().authenticated()
             )
 
