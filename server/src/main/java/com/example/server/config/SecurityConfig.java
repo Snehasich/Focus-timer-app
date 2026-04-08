@@ -13,6 +13,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -32,29 +33,22 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
-            .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
+            .csrf(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable) // 🔥 IMPORTANT FIX
 
             .authorizeHttpRequests(auth -> auth
-
-                // ✅ allow preflight
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                // ✅ PUBLIC ENDPOINTS
-                .requestMatchers("/register", "/login").permitAll()
-
-                // 🔒 secure others
-                .anyRequest().authenticated()
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // 🔥 allow preflight
+                    .requestMatchers("/register", "/login").permitAll()
+                    .anyRequest().authenticated()
             )
 
             .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
             .authenticationProvider(authenticationProvider())
-
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -76,23 +70,17 @@ public class SecurityConfig {
     // 🌍 FINAL CORS CONFIG (IMPORTANT 🔥)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ FIXED: specify exact frontend URL
         config.setAllowedOrigins(List.of(
-            "http://localhost:3000"
-            // add your deployed frontend here if needed
-            // "https://your-app.vercel.app"
+            "http://localhost:5173",
+            "https://focus-timer-app-vert.vercel.app"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
 
-        // ✅ keep this TRUE only with specific origins
-        config.setAllowCredentials(true);
-
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowCredentials(false); // 🔥 CHANGE THIS (IMPORTANT)
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
