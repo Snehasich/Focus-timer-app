@@ -7,7 +7,12 @@ const instance = axios.create({
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
-  if (token) {
+  // ❌ DO NOT attach token for login/register
+  if (
+    token &&
+    !config.url.includes("/login") &&
+    !config.url.includes("/register")
+  ) {
     config.headers.Authorization = "Bearer " + token;
   }
 
