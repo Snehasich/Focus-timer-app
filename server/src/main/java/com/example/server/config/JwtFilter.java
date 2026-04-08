@@ -26,13 +26,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+                                HttpServletResponse response,
+                                FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getServletPath();
 
-        // ✅ FIX: skip auth endpoints completely
+        // ✅ SKIP JWT for auth endpoints
         if (path.equals("/login") || path.equals("/register")) {
             filterChain.doFilter(request, response);
             return;
@@ -42,19 +42,11 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
 
-        // ✅ extract token safely
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-
-            try {
-                username = jwtService.extractUserName(token);
-            } catch (Exception e) {
-                // invalid token → ignore
-                username = null;
-            }
+            username = jwtService.extractUserName(token);
         }
 
-        // ✅ validate token and set authentication
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails = context
