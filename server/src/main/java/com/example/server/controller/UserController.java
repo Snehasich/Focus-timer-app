@@ -16,15 +16,18 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 @RestController
 public class UserController {
 
-    // we get the service on the controller, controller sending to service, service sending to database
-
     @Autowired
     private UserService service;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Users user) {
-        service.register(user);
-        return ResponseEntity.ok("User registered");
+        try {
+            service.register(user);
+            return ResponseEntity.ok("User registered");
+        } catch (Exception e) {
+            e.printStackTrace(); // 🔥 VERY IMPORTANT
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
     }
 
     @PostMapping("/login")
@@ -36,5 +39,4 @@ public class UserController {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
     }
-
 }
