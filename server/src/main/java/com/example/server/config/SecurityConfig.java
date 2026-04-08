@@ -36,11 +36,20 @@ public class SecurityConfig {
         http
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable) // 🔥 IMPORTANT FIX
+            .httpBasic(AbstractHttpConfigurer::disable)
 
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // 🔥 allow preflight
-                    .requestMatchers("/register", "/login").permitAll()
+
+                    // ✅ allow CORS preflight
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                    // ✅ VERY IMPORTANT → allow POST auth endpoints
+                    .requestMatchers(HttpMethod.POST, "/register", "/login").permitAll()
+
+                    // ✅ also allow any variation
+                    .requestMatchers("/register/**", "/login/**").permitAll()
+
+                    // 🔒 everything else secure
                     .anyRequest().authenticated()
             )
 
@@ -67,7 +76,7 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // 🌍 FINAL CORS CONFIG (IMPORTANT 🔥)
+    // 🌍 CORS CONFIG
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -80,7 +89,7 @@ public class SecurityConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
 
-        config.setAllowCredentials(false); // 🔥 CHANGE THIS (IMPORTANT)
+        config.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
