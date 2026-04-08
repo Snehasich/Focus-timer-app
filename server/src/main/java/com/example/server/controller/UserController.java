@@ -22,8 +22,9 @@ public class UserController {
     private UserService service;
 
     @PostMapping("/register")
-    public Users register(@RequestBody Users user) {              // receives data from client
-        return service.register(user);
+    public ResponseEntity<?> register(@RequestBody Users user) {
+        service.register(user);
+        return ResponseEntity.ok("User registered");
     }
 
     @PostMapping("/login")
