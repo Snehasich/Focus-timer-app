@@ -4,7 +4,6 @@ const instance = axios.create({
   baseURL: "https://focus-timer-app-2.onrender.com"
 });
 
-// 🔐 attach token automatically
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 

@@ -79,11 +79,17 @@ public class SecurityConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ use patterns (fixes Vercel dynamic URLs)
-        config.setAllowedOriginPatterns(List.of("*"));
+        // ✅ FIXED: specify exact frontend URL
+        config.setAllowedOrigins(List.of(
+            "http://localhost:3000"
+            // add your deployed frontend here if needed
+            // "https://your-app.vercel.app"
+        ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+
+        // ✅ keep this TRUE only with specific origins
         config.setAllowCredentials(true);
 
         config.setExposedHeaders(List.of("Authorization"));

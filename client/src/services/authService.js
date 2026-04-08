@@ -5,7 +5,7 @@ export const loginUser = async (user) => {
   const res = await instance.post("/login", user);
 
   if (res.data.token) {
-    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("token", res.data.token); // ✅ IMPORTANT
   }
 
   return res;

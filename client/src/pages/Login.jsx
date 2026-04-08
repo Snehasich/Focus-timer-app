@@ -16,13 +16,17 @@ function Login() {
     try {
       const res = await loginUser(user);
 
+      console.log("LOGIN RESPONSE:", res.data); // ✅ DEBUG
+
       if (res.data.token) {
-        navigate("/"); // ✅ go to home
+        navigate("/");
       } else {
         alert("Login failed");
       }
+
     } catch (err) {
-      alert("Invalid credentials or server waking up...");
+      console.error(err);
+      alert("Invalid credentials OR server sleeping (try again)");
     }
   };
 
