@@ -51,7 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/register/**", "/login/**").permitAll()
 
                         // 🔒 everything else secured
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
 
                 .sessionManagement(session ->
