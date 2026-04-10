@@ -76,13 +76,6 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- ⚡ H2 (optional) -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
         <!-- Optional: Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
