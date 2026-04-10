@@ -24,9 +24,8 @@ public class UserController {
         try {
             service.register(user);
             return ResponseEntity.ok("User registered");
-        } catch (Exception e) {
-            e.printStackTrace(); // 🔥 VERY IMPORTANT
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
