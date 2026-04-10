@@ -34,8 +34,8 @@ public class UserController {
         try {
             String token = service.verify(user);
             return ResponseEntity.ok(Map.of("token", token));
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body("Invalid username or password");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(e.getMessage());
         }
     }
 }
