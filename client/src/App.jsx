@@ -22,25 +22,16 @@ const PublicRoute = ({ children }) => {
   return token ? <Navigate to="/" replace /> : children;
 };
 
-// 📦 Layout (FIXED PROPERLY)
+// 📦 Layout (NO padding)
 const Layout = () => {
   return (
     <div className="bg-[#252525] min-h-screen w-full flex">
       <Side />
 
-      {/* FIXED */}
-      <div className="flex-1 p-4">
+      {/* NO GAP HERE */}
+      <div className="flex-1">
         <Outlet />
       </div>
-    </div>
-  );
-};
-
-// 🎯 Reusable Center Wrapper
-const CenterBox = ({ children }) => {
-  return (
-    <div className="w-full flex items-center justify-center bg-gray-900 rounded-3xl">
-      {children}
     </div>
   );
 };
@@ -50,7 +41,7 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Public Routes */}
+        {/* Public */}
         <Route
           path="/login"
           element={
@@ -69,7 +60,7 @@ function App() {
           }
         />
 
-        {/* Protected Routes */}
+        {/* Protected */}
         <Route
           path="/"
           element={
@@ -82,7 +73,7 @@ function App() {
           <Route
             index
             element={
-              <div >
+              <div className="p-4 h-[98%]">
                 <div className="mb-7">
                   <TaskRoute />
                 </div>
@@ -91,28 +82,30 @@ function App() {
             }
           />
 
-          {/* Timer */}
+          {/* ✅ FIXED */}
           <Route
             path="timer"
             element={
-              <CenterBox>
-                <Timer />
-              </CenterBox>
+              <div className="p-4 h-[98%] flex items-center justify-center">
+                <div className="w-full h-full bg-gray-900 rounded-4xl flex items-center justify-center">
+                  <Timer />
+                </div>
+              </div>
             }
           />
 
-          {/* Stopwatch */}
-          <Route
-            path="stopwatch"
-            element={
-              <CenterBox>
-                <StopWatch />
-              </CenterBox>
-            }
-          />
+          <Route path="stopwatch" element={
+            <div className="p-4 h-[98%]">
+              <StopWatch />
+            </div>
+          } />
 
           {/* Dashboard */}
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={
+            <div className="p-4 h-[98%]">
+              <Dashboard />
+            </div>
+          } />
         </Route>
 
       </Routes>
