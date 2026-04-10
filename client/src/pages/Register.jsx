@@ -13,13 +13,23 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    console.log("Sending:", user); // 🔥 DEBUG
+
+    if (!user.username || !user.password) {
+      alert("Fill all fields");
+      return;
+    }
+
     try {
-      await registerUser(user);
+      await registerUser({
+        username: user.username.trim(),
+        password: user.password.trim(),
+      });
 
       alert("Registered successfully");
-
-      navigate("/login"); // ✅ FIXED
+      navigate("/login");
     } catch (err) {
+      console.log(err.response?.data); // 🔥 IMPORTANT
       alert("Registration failed");
     }
   };
