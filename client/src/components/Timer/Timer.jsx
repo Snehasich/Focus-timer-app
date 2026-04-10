@@ -119,7 +119,7 @@ export const Timer = ({ initialTime = 50 * 60 }) => {
   };
 
   return (
-    <>
+    <div className="flex flex-col items-center justify-center gap-2 text-center">
       <div className="w-[250px] h-[250px] rounded-full border-4 border-blue-500 flex items-center justify-center text-white text-5xl font-extrabold">
         {formatTime()}
       </div>
@@ -143,6 +143,6 @@ export const Timer = ({ initialTime = 50 * 60 }) => {
           Reset
         </button>
       </div>
-    </>
+    </div>
   );
 };

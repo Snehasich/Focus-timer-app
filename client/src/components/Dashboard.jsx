@@ -4,16 +4,9 @@ import { logout } from "../services/authService";
 function Dashboard() {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
   return (
-    <div>
-      <h2>Dashboard (Protected)</h2>
-
-      <button onClick={handleLogout}>Logout</button>
+    <div className="flex-1 flex flex-col items-center justify-center bg-gray-900 rounded-4xl text-white">
+      <h2>Dashboard COMING SOON</h2>
     </div>
   );
 }
