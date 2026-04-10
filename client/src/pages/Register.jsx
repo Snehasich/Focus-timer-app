@@ -31,7 +31,10 @@ function Register() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
+            required
+            minLength={3}
             placeholder="Username"
+            value={user.username}
             className="p-2 bg-gray-700"
             onChange={(e) =>
               setUser({ ...user, username: e.target.value })
@@ -39,8 +42,11 @@ function Register() {
           />
 
           <input
+            required
+            minLength={3}
             type="password"
             placeholder="Password"
+            value={user.password}
             className="p-2 bg-gray-700"
             onChange={(e) =>
               setUser({ ...user, password: e.target.value })
