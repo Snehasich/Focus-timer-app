@@ -15,7 +15,7 @@ const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
 };
-
+ 
 // 🚫 Public Route
 const PublicRoute = ({ children }) => {
   const token = localStorage.getItem("token");

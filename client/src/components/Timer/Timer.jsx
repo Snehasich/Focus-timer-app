@@ -158,9 +158,6 @@ export const Timer = ({ initialTime = 50 * 60 }) => {
     setTime(getDuration("focus"));
     setStartedAt(null);
 
-    setFocusLoop(0);
-    setBreakLoop(0);
-
     sessionStorage.removeItem("timerState");
   };
 
