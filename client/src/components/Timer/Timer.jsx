@@ -131,11 +131,18 @@ export const Timer = ({ initialTime = 50 * 60 }) => {
   // ▶ Start / Pause
   const handleStartPause = () => {
     if (isRunning) {
+      // ⏸ Pause
       saveSession();
       setIsRunning(false);
     } else {
+      // ▶ Resume WITHOUT resetting timer
       const now = new Date();
-      setStartedAt(now);
+
+      const adjustedStart = new Date(
+        now - (getDuration(mode) - time) * 1000
+      );
+
+      setStartedAt(adjustedStart);
       setIsRunning(true);
     }
   };
