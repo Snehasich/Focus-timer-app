@@ -18,7 +18,7 @@ export const Side = () => {
           <House /> Home
         </button>
 
-        <button onClick={() => navigate("/timer")} className={getClass("/timer")}>
+        <button onClick={() => navigate("/focusbreak")} className={getClass("/focusbreak")}>
           <Timer /> Timer
         </button>
 

@@ -2,12 +2,12 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom
 import { Side } from "./components/Side";
 import { TaskRoute } from "./components/TaskRoute";
 import { TaskRouteTask } from "./components/TaskRoute_Task";
-import { Timer } from "./components/Timer/Timer";
 import { StopWatch } from "./components/Timer/StopWatch";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./components/Dashboard";
+import FocusBreak from "./components/Timer/FocusBreak";
 
 
 // 🔐 Private Route
@@ -84,11 +84,11 @@ function App() {
 
           {/* ✅ FIXED */}
           <Route
-            path="timer"
+            path="/focusbreak"
             element={
               <div className="p-4 h-[98%] flex items-center justify-center">
                 <div className="w-full h-full bg-gray-900 rounded-4xl flex items-center justify-center">
-                  <Timer />
+                  <FocusBreak />
                 </div>
               </div>
             }

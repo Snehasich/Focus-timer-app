@@ -1,8 +1,8 @@
 import { memo, useState, useEffect } from "react";
 import instance from "../api/axiosInstance"; // ✅ FIXED
-import { Timer } from "./Timer/Timer";
 import { Plus, ArrowUp } from "lucide-react";
 import { InsideTask } from "./InsideTask";
+import FocusBreak from "./Timer/FocusBreak";
 
 export const TaskRouteTask = memo(() => {
   const [isFocused, setIsFocused] = useState(false);
@@ -106,7 +106,7 @@ export const TaskRouteTask = memo(() => {
 
       {/* RIGHT CARD */}
       <div className="bg-[#161616] flex-1 h-[470px] rounded-2xl p-6 flex flex-col items-center justify-center border-2 border-gray-800">
-        <Timer initialTime={50 * 60} />
+        <FocusBreak />
       </div>
 
     </div>

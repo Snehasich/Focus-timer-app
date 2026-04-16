@@ -4,7 +4,7 @@ FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
 # 🔥 copy ONLY server folder
-COPY server /app
+COPY . /app
 
 WORKDIR /app
 
