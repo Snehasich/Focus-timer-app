@@ -10,6 +10,8 @@ export const loginUser = async (user) => {
 
   if (res.data.token) {
     localStorage.setItem("token", res.data.token);
+    // Save username for sidebar greeting
+    localStorage.setItem("username", res.data.username || user.username);
   }
 
   return res;

@@ -9,7 +9,6 @@ import Register from "./pages/Register";
 import Dashboard from "./components/Dashboard";
 import FocusBreak from "./components/Timer/FocusBreak";
 
-
 // 🔐 Private Route
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -22,14 +21,18 @@ const PublicRoute = ({ children }) => {
   return token ? <Navigate to="/" replace /> : children;
 };
 
-// 📦 Layout (NO padding)
-const Layout = () => {
-  return (
-    <div className="bg-[#252525] min-h-screen w-full flex">
-      <Side />
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 
-      {/* NO GAP HERE */}
-      <div className="flex-1">
+// 📦 Layout
+const Layout = () => {
+  const { theme } = useTheme();
+  return (
+    <div 
+      className="min-h-screen w-full flex transition-colors duration-200"
+      style={{ background: theme === "light" ? "#e2e8f0" : "#09090c" }}
+    >
+      <Side />
+      <div className="flex-1 overflow-y-auto">
         <Outlet />
       </div>
     </div>
@@ -38,8 +41,9 @@ const Layout = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
 
         {/* Public */}
         <Route
@@ -73,36 +77,50 @@ function App() {
           <Route
             index
             element={
-              <div className="p-4 h-[98%]">
-                <div className="mb-7">
+              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+                <div style={{ marginBottom: "16px" }}>
                   <TaskRoute />
                 </div>
-                <TaskRouteTask />
+                <div style={{ flex: 1, display: "flex" }}>
+                  <TaskRouteTask />
+                </div>
               </div>
             }
           />
 
-          {/* ✅ FIXED */}
+          {/* Focus & Break */}
           <Route
             path="/focusbreak"
             element={
-              <div className="p-4 h-[98%] flex items-center justify-center">
-                <div className="w-full h-full bg-gray-900 rounded-4xl flex items-center justify-center">
+              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+                <div style={{
+                  background: "#111",
+                  border: "1px solid #222",
+                  borderRadius: 24,
+                  padding: "24px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.4)",
+                  width: "100%",
+                }}>
                   <FocusBreak />
                 </div>
               </div>
             }
           />
 
+          {/* Stopwatch */}
           <Route path="stopwatch" element={
-            <div className="p-4 h-[98%]">
+            <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
               <StopWatch />
             </div>
           } />
 
           {/* Dashboard */}
           <Route path="dashboard" element={
-            <div className="p-4 h-[98%]">
+            <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
               <Dashboard />
             </div>
           } />
@@ -110,6 +128,7 @@ function App() {
 
       </Routes>
     </BrowserRouter>
+  </ThemeProvider>
   );
 }
 
