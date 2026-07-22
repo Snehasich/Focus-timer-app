@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { RotateCcw, Play, Pause } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useTimer } from "../../context/TimerContext";
 
 const RADIUS = 118;
 const STROKE = 8;
@@ -8,56 +9,42 @@ const SIZE = 290;
 const CENTER = SIZE / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-const FocusTimer = ({ initialTime = 50 * 60 }) => {
-  const intervalRef = useRef(null);
-  const alarmRef    = useRef(null);
-  const { theme }   = useTheme();
+const FocusTimer = () => {
+  const alarmRef = useRef(null);
+  const { theme } = useTheme();
+  const {
+    focusInitialTime: initialTime,
+    focusTime: time,
+    setFocusTime: setTime,
+    isFocusRunning: isRunning,
+    setIsFocusRunning: setIsRunning,
+    focusStartedAt: startedAt,
+    setFocusStartedAt: setStartedAt,
+    focusLoop,
+    setFocusLoop,
+  } = useTimer();
 
-  const [time, setTime]           = useState(initialTime);
-  const [isRunning, setIsRunning] = useState(false);
-  const [startedAt, setStartedAt] = useState(null);
-  const [focusLoop, setFocusLoop] = useState(0);
-  const [btnPulse, setBtnPulse]   = useState(false);
-  const [mounted, setMounted]     = useState(false);
+  const [btnPulse, setBtnPulse] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     alarmRef.current = new Audio("/alarm.mp3");
     setTimeout(() => setMounted(true), 60);
   }, []);
 
-  useEffect(() => {
-    if (isRunning && startedAt) {
-      intervalRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - new Date(startedAt)) / 1000);
-        const newTime = initialTime - elapsed;
-        if (newTime <= 0) {
-          clearInterval(intervalRef.current);
-          alarmRef.current?.play();
-          setIsRunning(false);
-          setFocusLoop((p) => p + 1);
-          setTime(initialTime);
-          setStartedAt(null);
-        } else {
-          setTime(newTime);
-        }
-      }, 1000);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [isRunning, startedAt]);
-
   const handleStartPause = () => {
     setBtnPulse(true);
     setTimeout(() => setBtnPulse(false), 300);
     if (isRunning) {
       setIsRunning(false);
+      setStartedAt(null);
     } else {
-      setStartedAt(new Date(Date.now() - (initialTime - time) * 1000));
+      setStartedAt(Date.now() - (initialTime - time) * 1000);
       setIsRunning(true);
     }
   };
 
   const handleReset = () => {
-    clearInterval(intervalRef.current);
     setIsRunning(false);
     setTime(initialTime);
     setStartedAt(null);
@@ -110,6 +97,7 @@ const FocusTimer = ({ initialTime = 50 * 60 }) => {
           display:flex; align-items:center; gap:7px;
           padding: 9px 22px; border-radius: 50px; border: none;
           font-weight: 600; font-size: 0.87rem; cursor: pointer;
+          outline: none;
           transition: transform 0.15s ease, filter 0.15s ease;
         }
         .ctrl-btn:hover  { transform: translateY(-1px); filter: brightness(1.1); }

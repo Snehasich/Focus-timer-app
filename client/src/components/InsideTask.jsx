@@ -59,7 +59,7 @@ export const InsideTask = memo(({ tasks, toggleTask, deleteTask }) => {
                 : (isLight ? "#ffffff" : "#0e0e0e"),
               border: task.completed 
                 ? (isLight ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(74,222,128,0.15)") 
-                : (isLight ? "1px solid #cbd5e1" : "1px solid rgba(0,0,0,0.5)"),
+                : (isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.5)"),
               boxShadow: isLight
                 ? "none"
                 : "inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.3)",

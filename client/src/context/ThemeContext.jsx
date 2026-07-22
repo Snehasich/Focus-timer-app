@@ -19,12 +19,18 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme]);
 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
+  const toggleSidebar = () => {
+    setSidebarOpen((prev) => !prev);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, sidebarOpen, setSidebarOpen, toggleSidebar }}>
       {children}
     </ThemeContext.Provider>
   );

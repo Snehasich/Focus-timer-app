@@ -1,17 +1,25 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { RotateCcw, Play, Pause, ListPlus } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import { useTimer } from "../../context/TimerContext";
 
 export const StopWatch = memo(() => {
-  const [time, setTime] = useState(0); // in milliseconds
-  const [isRunning, setIsRunning] = useState(false);
-  const [laps, setLaps] = useState([]);
-  const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
+  const {
+    isStopWatchRunning: isRunning,
+    setIsStopWatchRunning: setIsRunning,
+    stopWatchStartTime: startTime,
+    setStopWatchStartTime: setStartTime,
+    stopWatchPausedTime: pausedTime,
+    setStopWatchPausedTime: setPausedTime,
+    stopWatchLaps: laps,
+    setStopWatchLaps: setLaps,
+    stopWatchTime: time,
+    setStopWatchTime: setTime,
+  } = useTimer();
 
+  const [mounted, setMounted] = useState(false);
   const requestRef = useRef(null);
-  const startTimeRef = useRef(null);
-  const pausedTimeRef = useRef(0);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 60);
@@ -19,27 +27,34 @@ export const StopWatch = memo(() => {
   }, []);
 
   const updateTimer = () => {
-    const now = Date.now();
-    const elapsed = now - startTimeRef.current + pausedTimeRef.current;
-    setTime(elapsed);
+    if (startTime !== null) {
+      const now = Date.now();
+      const elapsed = now - startTime + pausedTime;
+      setTime(elapsed);
+    }
     requestRef.current = requestAnimationFrame(updateTimer);
   };
 
   useEffect(() => {
     if (isRunning) {
-      startTimeRef.current = Date.now();
       requestRef.current = requestAnimationFrame(updateTimer);
     } else {
       cancelAnimationFrame(requestRef.current);
-      if (startTimeRef.current) {
-        pausedTimeRef.current += Date.now() - startTimeRef.current;
-      }
     }
     return () => cancelAnimationFrame(requestRef.current);
-  }, [isRunning]);
+  }, [isRunning, startTime, pausedTime]);
 
   const handleStartPause = () => {
-    setIsRunning((prev) => !prev);
+    if (isRunning) {
+      setIsRunning(false);
+      if (startTime) {
+        setPausedTime((prev) => prev + (Date.now() - startTime));
+      }
+      setStartTime(null);
+    } else {
+      setStartTime(Date.now());
+      setIsRunning(true);
+    }
   };
 
   const handleReset = () => {
@@ -47,8 +62,8 @@ export const StopWatch = memo(() => {
     setTime(0);
     setIsRunning(false);
     setLaps([]);
-    pausedTimeRef.current = 0;
-    startTimeRef.current = null;
+    setPausedTime(0);
+    setStartTime(null);
   };
 
   const handleLap = () => {
@@ -57,7 +72,7 @@ export const StopWatch = memo(() => {
       id: Date.now(),
       index: laps.length + 1,
       timestamp: time,
-      diff: laps.length > 0 ? time - laps[0].timestamp : time, // relative to last lap
+      diff: laps.length > 0 ? time - laps[0].timestamp : time,
     };
     setLaps([newLap, ...laps]);
   };
@@ -96,6 +111,7 @@ export const StopWatch = memo(() => {
           display: flex; align-items: center; gap: 8px;
           padding: 10px 24px; border-radius: 50px; border: none;
           font-weight: 600; font-size: 0.9rem; cursor: pointer;
+          outline: none;
           transition: transform 0.15s ease, filter 0.15s ease;
         }
         .ctrl-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }

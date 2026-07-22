@@ -5,7 +5,12 @@ import { InsideTask } from "./InsideTask";
 import FocusBreak from "./Timer/FocusBreak";
 import { useTheme } from "../context/ThemeContext";
 
-export const TaskRouteTask = memo(() => {
+export const TaskRouteTask = memo(({ 
+  filter = "All Tasks", 
+  sortBy = "Default", 
+  bulkAction = null, 
+  onBulkActionProcessed 
+}) => {
   const [isFocused, setIsFocused] = useState(false);
   const [input, setInput] = useState("");
   const [tasks, setTasks] = useState([]);
@@ -25,6 +30,41 @@ export const TaskRouteTask = memo(() => {
     setTimeout(() => setLeftVisible(true),  150);
     setTimeout(() => setRightVisible(true), 280);
   }, []);
+
+  // ── Execute Bulk Actions ──
+  useEffect(() => {
+    if (!bulkAction) return;
+
+    if (bulkAction === "Reset All Tasks") {
+      const deletePromises = tasks.map((task) => instance.delete(`/tasks/${task.id}`));
+      Promise.all(deletePromises)
+        .then(() => {
+          fetchTasks();
+          onBulkActionProcessed();
+        })
+        .catch((err) => console.error("Bulk delete error:", err));
+    } else if (bulkAction === "Mark All Completed") {
+      const updatePromises = tasks
+        .filter((t) => !t.completed)
+        .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: true }));
+      Promise.all(updatePromises)
+        .then(() => {
+          fetchTasks();
+          onBulkActionProcessed();
+        })
+        .catch((err) => console.error("Bulk complete error:", err));
+    } else if (bulkAction === "Mark All Active") {
+      const updatePromises = tasks
+        .filter((t) => t.completed)
+        .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: false }));
+      Promise.all(updatePromises)
+        .then(() => {
+          fetchTasks();
+          onBulkActionProcessed();
+        })
+        .catch((err) => console.error("Bulk active error:", err));
+    }
+  }, [bulkAction, tasks]);
 
   const handleAddTask = () => {
     if (input.trim() === "") return;
@@ -49,6 +89,34 @@ export const TaskRouteTask = memo(() => {
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
   const isLight = theme === "light";
 
+  // ── FILTER TASKS ──
+  const filteredTasks = tasks.filter((task) => {
+    if (filter === "Active Only") return !task.completed;
+    if (filter === "Completed Only") return task.completed;
+    return true; // "All Tasks"
+  });
+
+  // ── SORT TASKS ──
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (sortBy === "A-Z (Alphabetical)") {
+      return a.text.localeCompare(b.text);
+    }
+    if (sortBy === "Z-A (Reverse)") {
+      return b.text.localeCompare(a.text);
+    }
+    if (sortBy === "Completed First") {
+      if (a.completed && !b.completed) return -1;
+      if (!a.completed && b.completed) return 1;
+      return 0;
+    }
+    if (sortBy === "Active First") {
+      if (!a.completed && b.completed) return -1;
+      if (a.completed && !b.completed) return 1;
+      return 0;
+    }
+    return 0; // "Default"
+  });
+
   return (
     <>
       <style>{`
@@ -59,14 +127,14 @@ export const TaskRouteTask = memo(() => {
         .card-left-normal {
           animation: cardIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
           box-shadow: ${isLight 
-            ? "inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 8px 24px rgba(15,23,42,0.03)" 
+            ? "0 10px 30px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02)" 
             : "inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.03), 0 16px 48px rgba(0, 0, 0, 0.8)"};
           transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
         }
         .card-right-normal {
           animation: cardIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
           box-shadow: ${isLight 
-            ? "inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 8px 24px rgba(15,23,42,0.03)" 
+            ? "0 10px 30px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02)" 
             : "inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.03), 0 16px 48px rgba(0, 0, 0, 0.8)"};
           transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
         }
@@ -94,14 +162,13 @@ export const TaskRouteTask = memo(() => {
 
         {/* ── LEFT CARD — Tasks ── */}
         <div
-          className="card-left-normal"
+          className="card-left-normal w-full lg:max-w-[380px]"
           style={{
             opacity: leftVisible ? undefined : 0,
             width: "100%",
-            maxWidth: 380,
             height: "100%",
             borderRadius: 20,
-            border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(0,0,0,0.8)",
+            border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.8)",
             background: isLight ? "#ffffff" : "#111",
             padding: 20,
             display: "flex",
@@ -154,7 +221,7 @@ export const TaskRouteTask = memo(() => {
 
           {/* Task list */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <InsideTask tasks={tasks} toggleTask={toggleTask} deleteTask={deleteTask} />
+            <InsideTask tasks={sortedTasks} toggleTask={toggleTask} deleteTask={deleteTask} />
           </div>
 
           {/* Add task input */}
@@ -164,7 +231,7 @@ export const TaskRouteTask = memo(() => {
               display: "flex",
               alignItems: "center",
               background: isLight ? "#f8fafc" : "#0e0e0e",
-              border: isLight ? "1px solid #cbd5e1" : "1px solid #252525",
+              border: isLight ? "1px solid #e2e8f0" : "1px solid #252525",
               borderRadius: 12,
             }}
           >
@@ -209,7 +276,7 @@ export const TaskRouteTask = memo(() => {
             flex: 1,
             height: "100%",
             borderRadius: 20,
-            border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(0,0,0,0.8)",
+            border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.8)",
             background: isLight ? "#ffffff" : "#111",
             padding: 24,
             display: "flex",

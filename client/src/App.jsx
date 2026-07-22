@@ -1,13 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Side } from "./components/Side";
-import { TaskRoute } from "./components/TaskRoute";
-import { TaskRouteTask } from "./components/TaskRoute_Task";
 import { StopWatch } from "./components/Timer/StopWatch";
+import TasksPage from "./pages/TasksPage";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./components/Dashboard";
 import FocusBreak from "./components/Timer/FocusBreak";
+import CalendarView from "./components/CalendarView";
+import NotesView from "./components/NotesView";
 
 // 🔐 Private Route
 const PrivateRoute = ({ children }) => {
@@ -22,18 +23,77 @@ const PublicRoute = ({ children }) => {
 };
 
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { TimerProvider } from "./context/TimerContext";
 
 // 📦 Layout
 const Layout = () => {
-  const { theme } = useTheme();
+  const { theme, sidebarOpen, toggleSidebar } = useTheme();
   return (
     <div 
-      className="min-h-screen w-full flex transition-colors duration-200"
-      style={{ background: theme === "light" ? "#e2e8f0" : "#09090c" }}
+      className="min-h-screen w-full flex transition-all duration-200"
+      style={{ background: theme === "light" ? "#eef2f6" : "#09090c", position: "relative" }}
     >
+      {/* Mobile Backdrop Overlay when sidebar is open on small screens */}
+      {sidebarOpen && (
+        <div 
+          onClick={toggleSidebar}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+        />
+      )}
+
       <Side />
-      <div className="flex-1 overflow-y-auto">
+
+      {/* Floating Toggle button when sidebar is closed */}
+      {!sidebarOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="fixed top-[26px] left-[26px] z-50 w-9 h-9 rounded-full shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center hover:scale-105"
+          style={{
+            background: theme === "light" ? "#ffffff" : "#161616",
+            border: theme === "light" ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
+            color: theme === "light" ? "#4b5563" : "#f3f4f6",
+            cursor: "pointer",
+            outline: "none",
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+      )}
+
+      <div 
+        className="flex-1 overflow-y-auto transition-all duration-300" 
+        style={{ 
+          paddingLeft: !sidebarOpen ? 46 : 0,
+        }}
+      >
         <Outlet />
+      </div>
+    </div>
+  );
+};
+
+// 📦 Focus & Break Wrapper
+const FocusBreakWrapper = () => {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  return (
+    <div className="h-screen p-3 sm:p-6 box-border flex flex-col">
+      <div 
+        className="rounded-3xl p-4 sm:p-6 flex items-center justify-center flex-1 w-full"
+        style={{
+          background: isLight ? "#ffffff" : "#111",
+          border: isLight ? "1px solid #e5e7eb" : "1px solid #222",
+        borderRadius: 24,
+        padding: "24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: 1,
+        boxShadow: isLight ? "0 8px 24px rgba(15,23,42,0.03)" : "0 10px 40px rgba(0,0,0,0.4)",
+        width: "100%",
+        transition: "background 0.2s, border-color 0.2s, box-shadow 0.2s",
+      }}>
+        <FocusBreak />
       </div>
     </div>
   );
@@ -42,92 +102,74 @@ const Layout = () => {
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
+      <TimerProvider>
+        <BrowserRouter>
+          <Routes>
 
-        {/* Public */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-
-        {/* Protected */}
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Layout />
-            </PrivateRoute>
-          }
-        >
-          {/* Home */}
+          {/* Public */}
           <Route
-            index
+            path="/login"
             element={
-              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-                <div style={{ marginBottom: "16px" }}>
-                  <TaskRoute />
-                </div>
-                <div style={{ flex: 1, display: "flex" }}>
-                  <TaskRouteTask />
-                </div>
-              </div>
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
             }
           />
 
-          {/* Focus & Break */}
           <Route
-            path="/focusbreak"
+            path="/register"
             element={
-              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-                <div style={{
-                  background: "#111",
-                  border: "1px solid #222",
-                  borderRadius: 24,
-                  padding: "24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: 1,
-                  boxShadow: "0 10px 40px rgba(0,0,0,0.4)",
-                  width: "100%",
-                }}>
-                  <FocusBreak />
-                </div>
-              </div>
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
             }
           />
 
-          {/* Stopwatch */}
-          <Route path="stopwatch" element={
-            <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-              <StopWatch />
-            </div>
-          } />
+          {/* Protected */}
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Layout />
+              </PrivateRoute>
+            }
+          >
+            {/* Home */}
+            <Route
+              index
+              element={<TasksPage />}
+            />
 
-          {/* Dashboard */}
-          <Route path="dashboard" element={
-            <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-              <Dashboard />
-            </div>
-          } />
-        </Route>
+            {/* Focus & Break */}
+            <Route
+              path="/focusbreak"
+              element={<FocusBreakWrapper />}
+            />
 
-      </Routes>
-    </BrowserRouter>
+            {/* Stopwatch */}
+            <Route path="stopwatch" element={
+              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+                <StopWatch />
+              </div>
+            } />
+
+            {/* Dashboard */}
+            <Route path="dashboard" element={
+              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+                <Dashboard />
+              </div>
+            } />
+
+            {/* Calendar */}
+            <Route path="calendar" element={<CalendarView />} />
+
+            {/* Notes */}
+            <Route path="notes" element={<NotesView />} />
+          </Route>
+
+        </Routes>
+      </BrowserRouter>
+    </TimerProvider>
   </ThemeProvider>
   );
 }

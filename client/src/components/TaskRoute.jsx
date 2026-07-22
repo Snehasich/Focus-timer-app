@@ -4,7 +4,13 @@ import { Dropdown } from "./Dropdown";
 import geminiIcon from "../assets/gemini-icon.png";
 import { useTheme } from "../context/ThemeContext";
 
-export const TaskRoute = memo(() => {
+export const TaskRoute = memo(({ 
+  currentFilter = "All Tasks", 
+  onFilterChange, 
+  currentSort = "Default", 
+  onSortChange, 
+  onBulkAction 
+}) => {
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === "light";
 
@@ -32,14 +38,14 @@ export const TaskRoute = memo(() => {
         .ask-btn:active { transform: scale(0.95); }
       `}</style>
 
-      <div className="flex justify-between items-center w-[98%] mt-3">
+      <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-3 w-full md:w-[98%] mt-3">
 
         {/* LEFT HEADER BAR */}
         <div
-          className="h-[42px] px-4 rounded-full flex items-center gap-4 w-fit"
+          className="h-[42px] px-4 rounded-full flex items-center gap-3 sm:gap-4 w-full sm:w-fit overflow-visible max-w-full sidebar-nav"
           style={{
             background: isLight ? "#ffffff" : "#161616",
-            border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
+            border: isLight ? "1px solid #e2e8f0" : "1px solid #2a2a2a",
             color: isLight ? "#4b5563" : "#9ca3af",
             boxShadow: isLight ? "0 4px 12px rgba(15,23,42,0.03)" : "none",
           }}
@@ -55,29 +61,38 @@ export const TaskRoute = memo(() => {
           <div className="h-4 w-px" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
 
           {/* VIEW */}
-          <Dropdown items={["Sort by", "Task Details"]}>
+          <Dropdown 
+            items={["Default", "A-Z (Alphabetical)", "Z-A (Reverse)", "Completed First", "Active First"]}
+            onItemClick={onSortChange}
+          >
             <div className="flex items-center gap-1 cursor-pointer">
               <ArrowDownUp className="w-3.5 h-3.5" />
-              <span className="text-sm">View</span>
+              <span className="text-sm" style={{ color: isLight ? "#111827" : "#fff" }}>View: {currentSort}</span>
             </div>
           </Dropdown>
 
           <div className="h-4 w-px" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
 
           {/* FILTER */}
-          <Dropdown items={["By Date", "By Priority", "Completed"]}>
+          <Dropdown 
+            items={["All Tasks", "Active Only", "Completed Only"]}
+            onItemClick={onFilterChange}
+          >
             <div className="flex items-center gap-1 cursor-pointer">
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span className="text-sm">Filter</span>
+              <span className="text-sm" style={{ color: isLight ? "#111827" : "#fff" }}>Filter: {currentFilter}</span>
             </div>
           </Dropdown>
 
           <div className="h-4 w-px" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
 
-          {/* DROPDOWN */}
-          <Dropdown items={["Layout", "Multi-select", "Print"]}>
+          {/* DROPDOWN (Ellipsis) */}
+          <Dropdown 
+            items={["Mark All Completed", "Mark All Active", "Reset All Tasks"]}
+            onItemClick={onBulkAction}
+          >
             <div className="cursor-pointer flex items-center">
-              <Ellipsis className="w-4 h-4" />
+              <Ellipsis className="w-4 h-4" style={{ color: isLight ? "#4b5563" : "#9ca3af" }} />
             </div>
           </Dropdown>
 
