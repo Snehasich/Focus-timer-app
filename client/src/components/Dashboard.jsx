@@ -8,7 +8,6 @@ import {
   TrendingUp,
   Calendar as CalendarIcon,
   Sparkles,
-  Award,
   BarChart3,
   BookOpen,
   CheckSquare,
@@ -102,6 +101,25 @@ export default function Dashboard() {
     return `${hrs}h ${mins}m`;
   }, [totalFocusSecondsToday]);
 
+  // ── Save Real Focus Seconds to Persistent Activity Log ──
+  useEffect(() => {
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    let activityLog = {};
+    try {
+      activityLog = JSON.parse(localStorage.getItem("focusflow_daily_activity") || "{}");
+    } catch {
+      activityLog = {};
+    }
+
+    // Record today's activity if user has logged in or focused
+    if (totalFocusSecondsToday > 0 || !activityLog[todayKey]) {
+      activityLog[todayKey] = Math.max(activityLog[todayKey] || 0, totalFocusSecondsToday);
+      localStorage.setItem("focusflow_daily_activity", JSON.stringify(activityLog));
+    }
+  }, [totalFocusSecondsToday]);
+
   // Daily goal: 4 hours (14,400 seconds)
   const dailyGoalSeconds = 4 * 3600;
   const dailyGoalPercent = Math.min(100, Math.round((totalFocusSecondsToday / dailyGoalSeconds) * 100));
@@ -121,31 +139,39 @@ export default function Dashboard() {
   const weeklyData = useMemo(() => {
     if (activeTab === "thisWeek") {
       return [
-        { day: "Mon", hours: 3.5, date: "Jul 20" },
-        { day: "Tue", hours: 4.2, date: "Jul 21" },
-        { day: "Wed", hours: 2.8, date: "Jul 22" },
-        { day: "Thu", hours: 5.0, date: "Jul 23" },
-        { day: "Fri", hours: 4.5, date: "Jul 24" },
-        { day: "Sat", hours: 3.0, date: "Jul 25" },
+        { day: "Mon", hours: 0, date: "Jul 20" },
+        { day: "Tue", hours: 0, date: "Jul 21" },
+        { day: "Wed", hours: 0, date: "Jul 22" },
+        { day: "Thu", hours: 0, date: "Jul 23" },
+        { day: "Fri", hours: 0, date: "Jul 24" },
+        { day: "Sat", hours: 0, date: "Jul 25" },
         { day: "Sun", hours: parseFloat((totalFocusSecondsToday / 3600).toFixed(1)), isToday: true, date: "Jul 26" },
       ];
     } else {
       return [
-        { day: "Mon", hours: 2.5, date: "Jul 13" },
-        { day: "Tue", hours: 3.8, date: "Jul 14" },
-        { day: "Wed", hours: 4.0, date: "Jul 15" },
-        { day: "Thu", hours: 3.2, date: "Jul 16" },
-        { day: "Fri", hours: 4.8, date: "Jul 17" },
-        { day: "Sat", hours: 2.0, date: "Jul 18" },
-        { day: "Sun", hours: 3.5, date: "Jul 19" },
+        { day: "Mon", hours: 0, date: "Jul 13" },
+        { day: "Tue", hours: 0, date: "Jul 14" },
+        { day: "Wed", hours: 0, date: "Jul 15" },
+        { day: "Thu", hours: 0, date: "Jul 16" },
+        { day: "Fri", hours: 0, date: "Jul 17" },
+        { day: "Sat", hours: 0, date: "Jul 18" },
+        { day: "Sun", hours: 0, date: "Jul 19" },
       ];
     }
   }, [activeTab, totalFocusSecondsToday]);
 
-  const maxWeeklyHours = Math.max(...weeklyData.map((d) => parseFloat(d.hours) || 1), 6);
+  const maxWeeklyHours = Math.max(...weeklyData.map((d) => parseFloat(d.hours) || 0), 4);
 
-  // ── AUTHENTIC LEETCODE MONTHLY HEATMAP GENERATOR (12 MONTH BLOCKS) ──
-  const leetcodeMonthlyData = useMemo(() => {
+  // ── REAL FOCUSFLOW 12-MONTH ACTIVITY HEATMAP GENERATOR ──
+  // Reads ONLY real logged activity from localStorage (Zero fake squares!)
+  const focusFlowMonthlyData = useMemo(() => {
+    let activityLog = {};
+    try {
+      activityLog = JSON.parse(localStorage.getItem("focusflow_daily_activity") || "{}");
+    } catch {
+      activityLog = {};
+    }
+
     const months = [];
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -182,13 +208,13 @@ export default function Dashboard() {
         let hours = 0;
         let level = 0;
 
-        if (isValidDay && !isFuture) {
-          const dateHash = y * 1000 + m * 50 + dayNum;
-          if (dateHash % 3 !== 0) {
-            hours = parseFloat(((dateHash % 7) * 0.9).toFixed(1));
-          }
+        if (isValidDay && cellDate && !isFuture) {
+          const dateKey = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, '0')}-${String(cellDate.getDate()).padStart(2, '0')}`;
+          
           if (isToday) {
             hours = parseFloat((totalFocusSecondsToday / 3600).toFixed(1));
+          } else if (activityLog[dateKey]) {
+            hours = parseFloat((activityLog[dateKey] / 3600).toFixed(1));
           }
 
           if (hours > 0) {
@@ -230,17 +256,17 @@ export default function Dashboard() {
       months,
       totalActiveDays,
       totalHours: totalHours.toFixed(1),
-      maxStreak: 18,
+      maxStreak: streakCount,
     };
-  }, [totalFocusSecondsToday]);
+  }, [totalFocusSecondsToday, streakCount]);
 
-  // Authentic LeetCode Green Palette Mapping
+  // Green Palette Mapping (Empty square for unvisited days)
   const getLeetCodeTileColor = (level, isLightMode) => {
     if (level === 0) return isLightMode ? "#ebedf0" : "#262626";
     if (level === 1) return isLightMode ? "#9be9a8" : "#0e4429";
     if (level === 2) return isLightMode ? "#40c463" : "#006d32";
     if (level === 3) return isLightMode ? "#30a14e" : "#26a641";
-    return "#2cbb5d"; // Bright LeetCode neon green
+    return "#2cbb5d"; // Bright neon green for active focus
   };
 
   // ── Subject / Category Analytics ──
@@ -499,7 +525,7 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ── 3. AUTHENTIC LEETCODE 12-MONTH ACTIVITY HEATMAP ── */}
+        {/* ── 3. FOCUSFLOW 12-MONTH ACTIVITY HEATMAP (REAL LOGGED DATA ONLY) ── */}
         <div
           className="dash-card p-6 rounded-2xl flex flex-col justify-between"
           style={{
@@ -514,10 +540,10 @@ export default function Dashboard() {
             <div>
               <h3 className="text-base font-extrabold flex items-center gap-2 tracking-tight">
                 <Activity size={18} className="text-emerald-500" />
-                LeetCode Activity Heatmap
+                FocusFlow Activity Heatmap
               </h3>
               <p className="text-xs font-semibold opacity-60 mt-0.5">
-                {leetcodeMonthlyData.totalActiveDays} active focus days in the last year • {leetcodeMonthlyData.totalHours} hrs total
+                {focusFlowMonthlyData.totalActiveDays} active focus days in the last year • {focusFlowMonthlyData.totalHours} hrs total
               </p>
             </div>
 
@@ -533,10 +559,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* 12-Month LeetCode Blocks Grid View */}
+          {/* 12-Month Blocks Grid View */}
           <div className="leetcode-grid w-full overflow-x-auto pb-2 pt-1">
             <div className="flex gap-3 justify-start min-w-max">
-              {leetcodeMonthlyData.months.map((monthObj, mIdx) => (
+              {focusFlowMonthlyData.months.map((monthObj, mIdx) => (
                 <div key={mIdx} className="flex flex-col items-center gap-2 flex-shrink-0">
                   {/* Month Matrix Grid (7 rows x N weeks) */}
                   <div className="flex gap-1">
@@ -593,15 +619,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Bottom LeetCode Summary Bar */}
+          {/* Bottom Summary Bar */}
           <div className="flex flex-wrap items-center justify-between pt-3 mt-3 border-t border-slate-200 dark:border-zinc-800 text-xs font-semibold opacity-80 gap-2">
             <div className="flex items-center gap-5">
               <span>🔥 Active Streak: <strong className="text-orange-500">{streakCount} Days</strong></span>
-              <span>🏆 Max Streak: <strong className="text-emerald-500">{leetcodeMonthlyData.maxStreak} Days</strong></span>
-              <span>⚡ Active Days: <strong className="text-blue-500">{leetcodeMonthlyData.totalActiveDays} Days</strong></span>
+              <span>⚡ Active Focus Days: <strong className="text-emerald-500">{focusFlowMonthlyData.totalActiveDays} Days</strong></span>
             </div>
             <span className="text-[11px] opacity-60">
-              Synced with your focus sessions and daily logins
+              Only real logged focus activity is recorded
             </span>
           </div>
 
