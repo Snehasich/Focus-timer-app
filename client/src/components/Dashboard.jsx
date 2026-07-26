@@ -10,14 +10,10 @@ import {
   Sparkles,
   Award,
   BarChart3,
-  ArrowUpRight,
   BookOpen,
-  Layers,
   CheckSquare,
   ChevronRight,
   Trophy,
-  Star,
-  ShieldCheck,
   Play,
   Activity,
   Zap,
@@ -35,7 +31,6 @@ export default function Dashboard() {
   const [username, setUsername] = useState("User");
   const [streakCount, setStreakCount] = useState(1);
   const [activeTab, setActiveTab] = useState("thisWeek");
-  const [heatmapRange, setHeatmapRange] = useState("12months"); // '12months', '6months', '2026'
   const [hoveredDay, setHoveredDay] = useState(null);
   const [hoveredCell, setHoveredCell] = useState(null);
 
@@ -49,7 +44,7 @@ export default function Dashboard() {
     const storedStreak = parseInt(localStorage.getItem("focusflow_streak") || "1", 10);
     setStreakCount(storedStreak);
 
-    const timer = setTimeout(() => setLoading(false), 350);
+    const timer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(timer);
   }, []);
 
@@ -149,84 +144,104 @@ export default function Dashboard() {
 
   const maxWeeklyHours = Math.max(...weeklyData.map((d) => parseFloat(d.hours) || 1), 6);
 
-  // ── LEETCODE STYLE 52-WEEK ACTIVITY HEATMAP GENERATOR ──
-  const leetcodeHeatmapData = useMemo(() => {
-    const weeksCount = heatmapRange === "6months" ? 26 : 52;
-    const weeks = [];
-    const today = new Date();
-    
-    // Align end date to nearest Saturday
-    const currentDayOfWeek = today.getDay(); // 0: Sun, 6: Sat
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + (6 - currentDayOfWeek));
+  // ── AUTHENTIC LEETCODE MONTHLY HEATMAP GENERATOR (12 MONTH BLOCKS) ──
+  const leetcodeMonthlyData = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-11
 
-    const monthLabels = [];
-    let lastMonth = -1;
     let totalActiveDays = 0;
-    let totalHoursLogged = 0;
+    let totalHours = 0;
 
-    for (let w = weeksCount - 1; w >= 0; w--) {
-      const weekIndex = (weeksCount - 1) - w;
-      const daysInWeek = [];
+    // Generate 12 consecutive months ending with current month
+    for (let i = 11; i >= 0; i--) {
+      let m = currentMonth - i;
+      let y = currentYear;
+      if (m < 0) {
+        m += 12;
+        y -= 1;
+      }
 
-      for (let d = 0; d < 7; d++) { // 0: Sun -> 6: Sat
-        const dayDate = new Date(endDate);
-        dayDate.setDate(endDate.getDate() - (w * 7 + (6 - d)));
+      const monthDate = new Date(y, m, 1);
+      const monthName = monthDate.toLocaleDateString("en-US", { month: "short" });
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const firstDayOfWeek = monthDate.getDay(); // 0: Sun ... 6: Sat
 
-        const monthIndex = dayDate.getMonth();
-        // Track month label on top row when month changes
-        if (d === 0 && monthIndex !== lastMonth) {
-          monthLabels.push({
-            colIndex: weekIndex,
-            label: dayDate.toLocaleDateString("en-US", { month: "short" })
-          });
-          lastMonth = monthIndex;
-        }
+      // Calculate cells in 7-row month grid
+      const totalCells = Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7;
+      const days = [];
 
-        const isToday = dayDate.toDateString() === today.toDateString();
-        const isFuture = dayDate > today;
+      for (let c = 0; c < totalCells; c++) {
+        const dayNum = c - firstDayOfWeek + 1;
+        const isValidDay = dayNum >= 1 && dayNum <= daysInMonth;
+        const cellDate = isValidDay ? new Date(y, m, dayNum) : null;
+        const isToday = cellDate ? cellDate.toDateString() === now.toDateString() : false;
+        const isFuture = cellDate ? cellDate > now : false;
 
-        // Deterministic simulation for past days, live data for today
         let hours = 0;
-        if (!isFuture) {
-          const dateHash = (dayDate.getFullYear() * 1000) + (dayDate.getMonth() * 50) + dayDate.getDate();
+        let level = 0;
+
+        if (isValidDay && !isFuture) {
+          const dateHash = y * 1000 + m * 50 + dayNum;
           if (dateHash % 3 !== 0) {
-            hours = parseFloat(((dateHash % 7) * 0.95).toFixed(1));
+            hours = parseFloat(((dateHash % 7) * 0.9).toFixed(1));
           }
           if (isToday) {
             hours = parseFloat((totalFocusSecondsToday / 3600).toFixed(1));
           }
+
+          if (hours > 0) {
+            totalActiveDays++;
+            totalHours += hours;
+            if (hours <= 1.5) level = 1;
+            else if (hours <= 3.5) level = 2;
+            else if (hours <= 5.5) level = 3;
+            else level = 4;
+          }
         }
 
-        if (hours > 0) totalActiveDays++;
-        totalHoursLogged += hours;
-
-        let level = 0;
-        if (hours > 0 && hours <= 1.5) level = 1;
-        else if (hours > 1.5 && hours <= 3.5) level = 2;
-        else if (hours > 3.5 && hours <= 5.5) level = 3;
-        else if (hours > 5.5) level = 4;
-
-        daysInWeek.push({
-          date: dayDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        days.push({
+          id: `${y}-${m}-${c}`,
+          dayNum: isValidDay ? dayNum : null,
+          dateStr: cellDate ? cellDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
           hours: hours.toFixed(1),
           level,
+          isValidDay,
           isToday,
           isFuture,
-          id: `${w}-${d}`
         });
       }
-      weeks.push(daysInWeek);
+
+      // Group days into columns of 7 days (Sun-Sat)
+      const weeksInMonth = [];
+      for (let w = 0; w < days.length; w += 7) {
+        weeksInMonth.push(days.slice(w, w + 7));
+      }
+
+      months.push({
+        monthName,
+        year: y,
+        weeks: weeksInMonth,
+      });
     }
 
     return {
-      weeks,
-      monthLabels,
+      months,
       totalActiveDays,
-      totalHoursLogged: totalHoursLogged.toFixed(1),
+      totalHours: totalHours.toFixed(1),
       maxStreak: 18,
     };
-  }, [totalFocusSecondsToday, heatmapRange]);
+  }, [totalFocusSecondsToday]);
+
+  // Authentic LeetCode Green Palette Mapping
+  const getLeetCodeTileColor = (level, isLightMode) => {
+    if (level === 0) return isLightMode ? "#ebedf0" : "#262626";
+    if (level === 1) return isLightMode ? "#9be9a8" : "#0e4429";
+    if (level === 2) return isLightMode ? "#40c463" : "#006d32";
+    if (level === 3) return isLightMode ? "#30a14e" : "#26a641";
+    return "#2cbb5d"; // Bright LeetCode neon green
+  };
 
   // ── Subject / Category Analytics ──
   const categories = [
@@ -251,15 +266,6 @@ export default function Dashboard() {
     { id: 3, title: "Early Bird", desc: "Started a session before 7:00 AM", icon: "🌅", unlocked: true, color: "#06b6d4" },
     { id: 4, title: "Marathoner", desc: "4+ hours focused in a single day", icon: "⚡", unlocked: false, color: "#a855f7" },
   ];
-
-  // LeetCode Green Palette Mapping
-  const getLeetCodeTileColor = (level, isLightMode) => {
-    if (level === 0) return isLightMode ? "#ebedf0" : "#161616";
-    if (level === 1) return isLightMode ? "#9be9a8" : "#0e4429";
-    if (level === 2) return isLightMode ? "#40c463" : "#006d32";
-    if (level === 3) return isLightMode ? "#30a14e" : "#26a641";
-    return "#2cbb5d"; // Authentic LeetCode bright green for max level
-  };
 
   return (
     <>
@@ -286,7 +292,7 @@ export default function Dashboard() {
         }
 
         .leetcode-grid::-webkit-scrollbar {
-          height: 5px;
+          height: 6px;
         }
         .leetcode-grid::-webkit-scrollbar-track {
           background: transparent;
@@ -493,7 +499,7 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ── 3. LEETCODE-STYLE FULL ACTIVITY HEATMAP (FULL WIDTH CARD) ── */}
+        {/* ── 3. AUTHENTIC LEETCODE 12-MONTH ACTIVITY HEATMAP ── */}
         <div
           className="dash-card p-6 rounded-2xl flex flex-col justify-between"
           style={{
@@ -511,122 +517,88 @@ export default function Dashboard() {
                 LeetCode Activity Heatmap
               </h3>
               <p className="text-xs font-semibold opacity-60 mt-0.5">
-                {leetcodeHeatmapData.totalActiveDays} active focus days in the last year • {leetcodeHeatmapData.totalHoursLogged} hrs total
+                {leetcodeMonthlyData.totalActiveDays} active focus days in the last year • {leetcodeMonthlyData.totalHours} hrs total
               </p>
             </div>
 
-            {/* Range Selector Pills */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: isLight ? "#f1f5f9" : "#1a1a20" }}>
-                <button
-                  onClick={() => setHeatmapRange("12months")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    heatmapRange === "12months"
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : isLight ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  Last 12 Months
-                </button>
-                <button
-                  onClick={() => setHeatmapRange("6months")}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    heatmapRange === "6months"
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : isLight ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  6 Months
-                </button>
-              </div>
-
-              {/* LeetCode Green Legend */}
-              <div className="flex items-center gap-1 text-[11px] font-semibold opacity-80 ml-2">
-                <span>Less</span>
-                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(0, isLight) }} />
-                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(1, isLight) }} />
-                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(2, isLight) }} />
-                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(3, isLight) }} />
-                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(4, isLight) }} />
-                <span>More</span>
-              </div>
+            {/* Legend */}
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold opacity-80">
+              <span>Less</span>
+              <span className="w-3 h-3 rounded-[2.5px]" style={{ background: getLeetCodeTileColor(0, isLight) }} />
+              <span className="w-3 h-3 rounded-[2.5px]" style={{ background: getLeetCodeTileColor(1, isLight) }} />
+              <span className="w-3 h-3 rounded-[2.5px]" style={{ background: getLeetCodeTileColor(2, isLight) }} />
+              <span className="w-3 h-3 rounded-[2.5px]" style={{ background: getLeetCodeTileColor(3, isLight) }} />
+              <span className="w-3 h-3 rounded-[2.5px]" style={{ background: getLeetCodeTileColor(4, isLight) }} />
+              <span>More</span>
             </div>
           </div>
 
-          {/* 52-Week LeetCode Grid View */}
-          <div className="leetcode-grid w-full overflow-x-auto pb-2">
-            <div className="min-w-[760px] flex flex-col gap-1">
-              
-              {/* Month Labels Top Row */}
-              <div className="flex text-[11px] font-bold opacity-60 pl-8 mb-1 relative h-4">
-                {leetcodeHeatmapData.monthLabels.map((m, idx) => (
-                  <span
-                    key={idx}
-                    className="absolute"
-                    style={{ left: `${m.colIndex * 15 + 32}px` }}
-                  >
-                    {m.label}
-                  </span>
-                ))}
-              </div>
-
-              {/* Grid Body: 7 Weekday Rows (Sun-Sat) x N Week Columns */}
-              <div className="flex gap-1">
-                {/* Y-Axis Weekday Labels */}
-                <div className="flex flex-col justify-between text-[10px] font-bold opacity-50 pr-2 py-0.5 h-[98px]">
-                  <span>Sun</span>
-                  <span>Mon</span>
-                  <span>Wed</span>
-                  <span>Fri</span>
-                  <span>Sat</span>
-                </div>
-
-                {/* Week Columns */}
-                <div className="flex gap-1 flex-1">
-                  {leetcodeHeatmapData.weeks.map((week, weekIdx) => (
-                    <div key={weekIdx} className="flex flex-col gap-1">
-                      {week.map((cell) => {
-                        const tileBg = getLeetCodeTileColor(cell.level, isLight);
-                        const isHovered = hoveredCell === cell.id;
-
-                        return (
-                          <div
-                            key={cell.id}
-                            className={`w-3 h-3 rounded-sm transition-all cursor-pointer relative ${
-                              cell.isToday ? "ring-2 ring-emerald-400 ring-offset-1 dark:ring-offset-zinc-900" : ""
-                            } ${cell.isFuture ? "opacity-30 pointer-events-none" : "hover:scale-125 hover:z-20"}`}
-                            style={{ background: tileBg }}
-                            onMouseEnter={() => setHoveredCell(cell.id)}
-                            onMouseLeave={() => setHoveredCell(null)}
-                          >
-                            {/* Hover Tooltip */}
-                            {isHovered && (
+          {/* 12-Month LeetCode Blocks Grid View */}
+          <div className="leetcode-grid w-full overflow-x-auto pb-2 pt-1">
+            <div className="flex gap-3 justify-start min-w-max">
+              {leetcodeMonthlyData.months.map((monthObj, mIdx) => (
+                <div key={mIdx} className="flex flex-col items-center gap-2 flex-shrink-0">
+                  {/* Month Matrix Grid (7 rows x N weeks) */}
+                  <div className="flex gap-1">
+                    {monthObj.weeks.map((week, wIdx) => (
+                      <div key={wIdx} className="flex flex-col gap-1">
+                        {week.map((cell) => {
+                          if (!cell.isValidDay) {
+                            return (
                               <div
-                                className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-2.5 py-1 rounded-md text-[11px] font-extrabold shadow-xl z-50 whitespace-nowrap animate-in fade-in zoom-in-95 duration-100 pointer-events-none"
-                                style={{
-                                  background: isLight ? "#0f172a" : "#f8fafc",
-                                  color: isLight ? "#ffffff" : "#0f172a",
-                                }}
-                              >
-                                {cell.date}: <span className="text-emerald-500">{cell.hours}h focused</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
+                                key={cell.id}
+                                className="w-3 h-3 rounded-[2.5px] opacity-0 pointer-events-none"
+                              />
+                            );
+                          }
 
+                          const tileBg = getLeetCodeTileColor(cell.level, isLight);
+                          const isHovered = hoveredCell === cell.id;
+
+                          return (
+                            <div
+                              key={cell.id}
+                              className={`w-3 h-3 rounded-[2.5px] transition-all cursor-pointer relative ${
+                                cell.isToday ? "ring-2 ring-emerald-400 ring-offset-1 dark:ring-offset-zinc-950" : ""
+                              } ${cell.isFuture ? "opacity-25 pointer-events-none" : "hover:scale-125 hover:z-30"}`}
+                              style={{ background: tileBg }}
+                              onMouseEnter={() => setHoveredCell(cell.id)}
+                              onMouseLeave={() => setHoveredCell(null)}
+                            >
+                              {/* Hover Tooltip */}
+                              {isHovered && (
+                                <div
+                                  className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-2.5 py-1 rounded-md text-[11px] font-extrabold shadow-2xl z-50 whitespace-nowrap pointer-events-none"
+                                  style={{
+                                    background: isLight ? "#0f172a" : "#f8fafc",
+                                    color: isLight ? "#ffffff" : "#0f172a",
+                                  }}
+                                >
+                                  {cell.dateStr}: <span className="text-emerald-500">{cell.hours}h focused</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Month Label at Bottom */}
+                  <span className="text-[11px] font-bold opacity-60">
+                    {monthObj.monthName}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Bottom LeetCode Summary Bar */}
-          <div className="flex flex-wrap items-center justify-between pt-3 mt-2 border-t border-slate-200 dark:border-zinc-800 text-xs font-semibold opacity-80 gap-2">
-            <div className="flex items-center gap-4">
-              <span>🔥 Current Streak: <strong className="text-orange-500">{streakCount} Days</strong></span>
-              <span>🏆 Max Streak: <strong className="text-emerald-500">{leetcodeHeatmapData.maxStreak} Days</strong></span>
+          <div className="flex flex-wrap items-center justify-between pt-3 mt-3 border-t border-slate-200 dark:border-zinc-800 text-xs font-semibold opacity-80 gap-2">
+            <div className="flex items-center gap-5">
+              <span>🔥 Active Streak: <strong className="text-orange-500">{streakCount} Days</strong></span>
+              <span>🏆 Max Streak: <strong className="text-emerald-500">{leetcodeMonthlyData.maxStreak} Days</strong></span>
+              <span>⚡ Active Days: <strong className="text-blue-500">{leetcodeMonthlyData.totalActiveDays} Days</strong></span>
             </div>
             <span className="text-[11px] opacity-60">
               Synced with your focus sessions and daily logins
