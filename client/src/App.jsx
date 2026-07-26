@@ -30,7 +30,7 @@ const Layout = () => {
   const { theme, sidebarOpen, toggleSidebar } = useTheme();
   return (
     <div 
-      className="min-h-screen w-full flex transition-all duration-200"
+      className="h-screen w-full flex overflow-hidden transition-all duration-200"
       style={{ background: theme === "light" ? "#eef2f6" : "#09090c", position: "relative" }}
     >
       {/* Mobile Backdrop Overlay when sidebar is open on small screens */}
@@ -61,7 +61,7 @@ const Layout = () => {
       )}
 
       <div 
-        className="flex-1 overflow-y-auto transition-all duration-300" 
+        className="flex-1 h-screen overflow-y-auto transition-all duration-300" 
         style={{ 
           paddingLeft: !sidebarOpen ? 46 : 0,
         }}

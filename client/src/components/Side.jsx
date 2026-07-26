@@ -130,7 +130,7 @@ export const Side = () => {
       `}</style>
 
       <div 
-        className="h-screen sidebar-responsive flex flex-col transition-all duration-300"
+        className="h-screen sidebar-responsive flex flex-col flex-shrink-0 transition-all duration-300"
         style={{
           width: sidebarOpen ? 211 : 0,
           transform: sidebarOpen ? "translateX(0)" : "translateX(-211px)",
