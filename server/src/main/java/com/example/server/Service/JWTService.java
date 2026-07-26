@@ -26,8 +26,8 @@ public class JWTService {
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
 
-                // ✅ FIXED: correct expiration (30 hours)
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
+                // ✅ Expiration: 1 year (365 days)
+                .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 365))
 
                 .signWith(getKey())
                 .compact();
