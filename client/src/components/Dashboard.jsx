@@ -35,8 +35,9 @@ export default function Dashboard() {
   const [username, setUsername] = useState("User");
   const [streakCount, setStreakCount] = useState(1);
   const [activeTab, setActiveTab] = useState("thisWeek");
+  const [heatmapRange, setHeatmapRange] = useState("12months"); // '12months', '6months', '2026'
   const [hoveredDay, setHoveredDay] = useState(null);
-  const [hoveredTile, setHoveredTile] = useState(null);
+  const [hoveredCell, setHoveredCell] = useState(null);
 
   const isLight = theme === "light";
 
@@ -48,7 +49,7 @@ export default function Dashboard() {
     const storedStreak = parseInt(localStorage.getItem("focusflow_streak") || "1", 10);
     setStreakCount(storedStreak);
 
-    const timer = setTimeout(() => setLoading(false), 400);
+    const timer = setTimeout(() => setLoading(false), 350);
     return () => clearTimeout(timer);
   }, []);
 
@@ -92,7 +93,6 @@ export default function Dashboard() {
   }, []);
 
   // ── Calculated Real Focus Time Today ──
-  // Completed loops * 50 mins + active elapsed seconds
   const totalFocusSecondsToday = useMemo(() => {
     const loopSeconds = focusLoop * (50 * 60);
     const currentElapsed = isFocusRunning ? Math.max(0, focusInitialTime - focusTime) : 0;
@@ -132,7 +132,7 @@ export default function Dashboard() {
         { day: "Thu", hours: 5.0, date: "Jul 23" },
         { day: "Fri", hours: 4.5, date: "Jul 24" },
         { day: "Sat", hours: 3.0, date: "Jul 25" },
-        { day: "Sun", hours: (totalFocusSecondsToday / 3600).toFixed(1), isToday: true, date: "Jul 26" },
+        { day: "Sun", hours: parseFloat((totalFocusSecondsToday / 3600).toFixed(1)), isToday: true, date: "Jul 26" },
       ];
     } else {
       return [
@@ -149,28 +149,84 @@ export default function Dashboard() {
 
   const maxWeeklyHours = Math.max(...weeklyData.map((d) => parseFloat(d.hours) || 1), 6);
 
-  // ── GitHub Style Heatmap Data (28 Days) ──
-  const heatmapTiles = useMemo(() => {
-    const tiles = [];
+  // ── LEETCODE STYLE 52-WEEK ACTIVITY HEATMAP GENERATOR ──
+  const leetcodeHeatmapData = useMemo(() => {
+    const weeksCount = heatmapRange === "6months" ? 26 : 52;
+    const weeks = [];
     const today = new Date();
-    for (let i = 27; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dayStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      
-      // Assign mock intensity level (0: none, 1: low, 2: med, 3: high)
-      let level = (i * 3 + 1) % 4;
-      if (i === 0) level = Math.min(3, Math.floor((totalFocusSecondsToday / 3600) / 1.5) + 1);
-      
-      tiles.push({
-        date: dayStr,
-        level: level,
-        hours: (level * 1.5).toFixed(1),
-        isToday: i === 0,
-      });
+    
+    // Align end date to nearest Saturday
+    const currentDayOfWeek = today.getDay(); // 0: Sun, 6: Sat
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + (6 - currentDayOfWeek));
+
+    const monthLabels = [];
+    let lastMonth = -1;
+    let totalActiveDays = 0;
+    let totalHoursLogged = 0;
+
+    for (let w = weeksCount - 1; w >= 0; w--) {
+      const weekIndex = (weeksCount - 1) - w;
+      const daysInWeek = [];
+
+      for (let d = 0; d < 7; d++) { // 0: Sun -> 6: Sat
+        const dayDate = new Date(endDate);
+        dayDate.setDate(endDate.getDate() - (w * 7 + (6 - d)));
+
+        const monthIndex = dayDate.getMonth();
+        // Track month label on top row when month changes
+        if (d === 0 && monthIndex !== lastMonth) {
+          monthLabels.push({
+            colIndex: weekIndex,
+            label: dayDate.toLocaleDateString("en-US", { month: "short" })
+          });
+          lastMonth = monthIndex;
+        }
+
+        const isToday = dayDate.toDateString() === today.toDateString();
+        const isFuture = dayDate > today;
+
+        // Deterministic simulation for past days, live data for today
+        let hours = 0;
+        if (!isFuture) {
+          const dateHash = (dayDate.getFullYear() * 1000) + (dayDate.getMonth() * 50) + dayDate.getDate();
+          if (dateHash % 3 !== 0) {
+            hours = parseFloat(((dateHash % 7) * 0.95).toFixed(1));
+          }
+          if (isToday) {
+            hours = parseFloat((totalFocusSecondsToday / 3600).toFixed(1));
+          }
+        }
+
+        if (hours > 0) totalActiveDays++;
+        totalHoursLogged += hours;
+
+        let level = 0;
+        if (hours > 0 && hours <= 1.5) level = 1;
+        else if (hours > 1.5 && hours <= 3.5) level = 2;
+        else if (hours > 3.5 && hours <= 5.5) level = 3;
+        else if (hours > 5.5) level = 4;
+
+        daysInWeek.push({
+          date: dayDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          hours: hours.toFixed(1),
+          level,
+          isToday,
+          isFuture,
+          id: `${w}-${d}`
+        });
+      }
+      weeks.push(daysInWeek);
     }
-    return tiles;
-  }, [totalFocusSecondsToday]);
+
+    return {
+      weeks,
+      monthLabels,
+      totalActiveDays,
+      totalHoursLogged: totalHoursLogged.toFixed(1),
+      maxStreak: 18,
+    };
+  }, [totalFocusSecondsToday, heatmapRange]);
 
   // ── Subject / Category Analytics ──
   const categories = [
@@ -196,16 +252,21 @@ export default function Dashboard() {
     { id: 4, title: "Marathoner", desc: "4+ hours focused in a single day", icon: "⚡", unlocked: false, color: "#a855f7" },
   ];
 
+  // LeetCode Green Palette Mapping
+  const getLeetCodeTileColor = (level, isLightMode) => {
+    if (level === 0) return isLightMode ? "#ebedf0" : "#161616";
+    if (level === 1) return isLightMode ? "#9be9a8" : "#0e4429";
+    if (level === 2) return isLightMode ? "#40c463" : "#006d32";
+    if (level === 3) return isLightMode ? "#30a14e" : "#26a641";
+    return "#2cbb5d"; // Authentic LeetCode bright green for max level
+  };
+
   return (
     <>
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.8; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.03); }
         }
         @keyframes shimmer {
           0% { background-position: -200% 0; }
@@ -222,6 +283,17 @@ export default function Dashboard() {
         }
         .dash-card:hover {
           transform: translateY(-2px);
+        }
+
+        .leetcode-grid::-webkit-scrollbar {
+          height: 5px;
+        }
+        .leetcode-grid::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .leetcode-grid::-webkit-scrollbar-thumb {
+          background: ${isLight ? "#cbd5e1" : "#333338"};
+          border-radius: 4px;
         }
 
         .skeleton {
@@ -421,7 +493,149 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ── 3. MIDDLE SECTION: Weekly Chart & Task Progress ── */}
+        {/* ── 3. LEETCODE-STYLE FULL ACTIVITY HEATMAP (FULL WIDTH CARD) ── */}
+        <div
+          className="dash-card p-6 rounded-2xl flex flex-col justify-between"
+          style={{
+            background: isLight ? "#ffffff" : "#121215",
+            border: isLight ? "1px solid #e2e8f0" : "1px solid #222228",
+            borderRadius: 20,
+            boxShadow: isLight ? "0 4px 20px rgba(15,23,42,0.03)" : "none",
+          }}
+        >
+          {/* Header Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-zinc-800">
+            <div>
+              <h3 className="text-base font-extrabold flex items-center gap-2 tracking-tight">
+                <Activity size={18} className="text-emerald-500" />
+                LeetCode Activity Heatmap
+              </h3>
+              <p className="text-xs font-semibold opacity-60 mt-0.5">
+                {leetcodeHeatmapData.totalActiveDays} active focus days in the last year • {leetcodeHeatmapData.totalHoursLogged} hrs total
+              </p>
+            </div>
+
+            {/* Range Selector Pills */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: isLight ? "#f1f5f9" : "#1a1a20" }}>
+                <button
+                  onClick={() => setHeatmapRange("12months")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    heatmapRange === "12months"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : isLight ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Last 12 Months
+                </button>
+                <button
+                  onClick={() => setHeatmapRange("6months")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    heatmapRange === "6months"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : isLight ? "text-slate-600 hover:text-slate-900" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  6 Months
+                </button>
+              </div>
+
+              {/* LeetCode Green Legend */}
+              <div className="flex items-center gap-1 text-[11px] font-semibold opacity-80 ml-2">
+                <span>Less</span>
+                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(0, isLight) }} />
+                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(1, isLight) }} />
+                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(2, isLight) }} />
+                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(3, isLight) }} />
+                <span className="w-3 h-3 rounded-sm" style={{ background: getLeetCodeTileColor(4, isLight) }} />
+                <span>More</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 52-Week LeetCode Grid View */}
+          <div className="leetcode-grid w-full overflow-x-auto pb-2">
+            <div className="min-w-[760px] flex flex-col gap-1">
+              
+              {/* Month Labels Top Row */}
+              <div className="flex text-[11px] font-bold opacity-60 pl-8 mb-1 relative h-4">
+                {leetcodeHeatmapData.monthLabels.map((m, idx) => (
+                  <span
+                    key={idx}
+                    className="absolute"
+                    style={{ left: `${m.colIndex * 15 + 32}px` }}
+                  >
+                    {m.label}
+                  </span>
+                ))}
+              </div>
+
+              {/* Grid Body: 7 Weekday Rows (Sun-Sat) x N Week Columns */}
+              <div className="flex gap-1">
+                {/* Y-Axis Weekday Labels */}
+                <div className="flex flex-col justify-between text-[10px] font-bold opacity-50 pr-2 py-0.5 h-[98px]">
+                  <span>Sun</span>
+                  <span>Mon</span>
+                  <span>Wed</span>
+                  <span>Fri</span>
+                  <span>Sat</span>
+                </div>
+
+                {/* Week Columns */}
+                <div className="flex gap-1 flex-1">
+                  {leetcodeHeatmapData.weeks.map((week, weekIdx) => (
+                    <div key={weekIdx} className="flex flex-col gap-1">
+                      {week.map((cell) => {
+                        const tileBg = getLeetCodeTileColor(cell.level, isLight);
+                        const isHovered = hoveredCell === cell.id;
+
+                        return (
+                          <div
+                            key={cell.id}
+                            className={`w-3 h-3 rounded-sm transition-all cursor-pointer relative ${
+                              cell.isToday ? "ring-2 ring-emerald-400 ring-offset-1 dark:ring-offset-zinc-900" : ""
+                            } ${cell.isFuture ? "opacity-30 pointer-events-none" : "hover:scale-125 hover:z-20"}`}
+                            style={{ background: tileBg }}
+                            onMouseEnter={() => setHoveredCell(cell.id)}
+                            onMouseLeave={() => setHoveredCell(null)}
+                          >
+                            {/* Hover Tooltip */}
+                            {isHovered && (
+                              <div
+                                className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-2.5 py-1 rounded-md text-[11px] font-extrabold shadow-xl z-50 whitespace-nowrap animate-in fade-in zoom-in-95 duration-100 pointer-events-none"
+                                style={{
+                                  background: isLight ? "#0f172a" : "#f8fafc",
+                                  color: isLight ? "#ffffff" : "#0f172a",
+                                }}
+                              >
+                                {cell.date}: <span className="text-emerald-500">{cell.hours}h focused</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Bottom LeetCode Summary Bar */}
+          <div className="flex flex-wrap items-center justify-between pt-3 mt-2 border-t border-slate-200 dark:border-zinc-800 text-xs font-semibold opacity-80 gap-2">
+            <div className="flex items-center gap-4">
+              <span>🔥 Current Streak: <strong className="text-orange-500">{streakCount} Days</strong></span>
+              <span>🏆 Max Streak: <strong className="text-emerald-500">{leetcodeHeatmapData.maxStreak} Days</strong></span>
+            </div>
+            <span className="text-[11px] opacity-60">
+              Synced with your focus sessions and daily logins
+            </span>
+          </div>
+
+        </div>
+
+        {/* ── 4. MIDDLE SECTION: Weekly Chart & Task Progress ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Weekly Focus Chart (2 Cols) */}
@@ -590,114 +804,7 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ── 4. HEATMAP & SUBJECT ANALYTICS ROW ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* 4. Focus Heatmap (2 Cols) */}
-          <div
-            className="dash-card lg:col-span-2 p-6 rounded-2xl flex flex-col justify-between"
-            style={{
-              background: isLight ? "#ffffff" : "#121215",
-              border: isLight ? "1px solid #e2e8f0" : "1px solid #222228",
-              borderRadius: 20,
-            }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold flex items-center gap-2">
-                  <Activity size={18} className="text-orange-500" />
-                  Focus Heatmap
-                </h3>
-                <p className="text-xs opacity-60 font-medium">Daily activity log over past 28 days</p>
-              </div>
-
-              {/* Legend */}
-              <div className="flex items-center gap-1 text-[11px] font-semibold opacity-70">
-                <span>Less</span>
-                <span className="w-3 h-3 rounded-sm bg-slate-200 dark:bg-zinc-800" />
-                <span className="w-3 h-3 rounded-sm bg-emerald-300 dark:bg-emerald-900" />
-                <span className="w-3 h-3 rounded-sm bg-emerald-500 dark:bg-emerald-600" />
-                <span className="w-3 h-3 rounded-sm bg-emerald-600 dark:bg-emerald-400" />
-                <span>More</span>
-              </div>
-            </div>
-
-            {/* Heatmap Grid */}
-            <div className="grid grid-cols-7 sm:grid-cols-14 gap-2 my-2 relative">
-              {heatmapTiles.map((tile, i) => {
-                let bg = isLight ? "#e2e8f0" : "#27272a";
-                if (tile.level === 1) bg = isLight ? "#a7f3d0" : "#064e3b";
-                if (tile.level === 2) bg = isLight ? "#34d399" : "#047857";
-                if (tile.level === 3) bg = isLight ? "#059669" : "#10b981";
-
-                return (
-                  <div
-                    key={i}
-                    className={`h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer relative ${
-                      tile.isToday ? "ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-zinc-900" : ""
-                    }`}
-                    style={{ background: bg }}
-                    onMouseEnter={() => setHoveredTile(i)}
-                    onMouseLeave={() => setHoveredTile(null)}
-                  >
-                    {hoveredTile === i && (
-                      <div
-                        className="absolute -top-9 px-2 py-1 rounded-md text-[11px] font-bold shadow-lg z-30 whitespace-nowrap"
-                        style={{
-                          background: isLight ? "#0f172a" : "#f8fafc",
-                          color: isLight ? "#ffffff" : "#0f172a",
-                        }}
-                      >
-                        {tile.date}: {tile.hours}h focused
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            
-            <span className="text-[11px] font-semibold opacity-50 text-right mt-1">
-              Updated in real-time based on timer completions
-            </span>
-          </div>
-
-          {/* 6. Subject/Category Analytics (1 Col) */}
-          <div
-            className="dash-card p-6 rounded-2xl flex flex-col justify-between"
-            style={{
-              background: isLight ? "#ffffff" : "#121215",
-              border: isLight ? "1px solid #e2e8f0" : "1px solid #222228",
-              borderRadius: 20,
-            }}
-          >
-            <h3 className="text-base font-bold flex items-center gap-2 mb-3">
-              <BookOpen size={18} className="text-purple-500" />
-              Subject Analytics
-            </h3>
-
-            <div className="flex flex-col gap-3.5">
-              {categories.map((cat, i) => (
-                <div key={i} className="flex flex-col gap-1">
-                  <div className="flex justify-between items-center text-xs font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <span>{cat.icon}</span> {cat.name}
-                    </span>
-                    <span className="opacity-70">{cat.hours}h ({cat.percent}%)</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${cat.percent}%`, background: cat.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-
-        {/* ── 5. BOTTOM SECTION: Schedule, AI Insights, Achievements, Goals ── */}
+        {/* ── 5. BOTTOM SECTION: Schedule, AI Insights, Achievements, Subject Analytics ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
           {/* 7. Upcoming Schedule */}
@@ -745,74 +852,38 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* 8. AI Insights & 10. Goals Combo Card */}
-          <div className="flex flex-col gap-6">
-            
-            {/* AI Insights Card */}
-            <div
-              className="dash-card p-5 rounded-2xl relative overflow-hidden"
-              style={{
-                background: isLight 
-                  ? "linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(147, 51, 234, 0.05))" 
-                  : "linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))",
-                border: isLight ? "1px solid rgba(59, 130, 246, 0.2)" : "1px solid rgba(59, 130, 246, 0.25)",
-                borderRadius: 20,
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={18} className="text-blue-500 animate-pulse" />
-                <h4 className="text-sm font-bold text-blue-500 uppercase tracking-wider">AI Focus Insights</h4>
-              </div>
-              <ul className="flex flex-col gap-2 text-xs font-semibold opacity-90">
-                <li className="flex items-start gap-1.5">
-                  <span className="text-blue-500 mt-0.5">•</span> Your peak focus efficiency occurs between 8:00 PM – 11:00 PM.
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <span className="text-emerald-500 mt-0.5">•</span> You've improved focus duration by 18% compared to last week.
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <span className="text-purple-500 mt-0.5">•</span> Complete 1 more 50-min session to reach today's target!
-                </li>
-              </ul>
-            </div>
+          {/* 6. Subject Analytics */}
+          <div
+            className="dash-card p-6 rounded-2xl flex flex-col justify-between"
+            style={{
+              background: isLight ? "#ffffff" : "#121215",
+              border: isLight ? "1px solid #e2e8f0" : "1px solid #222228",
+              borderRadius: 20,
+            }}
+          >
+            <h3 className="text-base font-bold flex items-center gap-2 mb-3">
+              <BookOpen size={18} className="text-purple-500" />
+              Subject Analytics
+            </h3>
 
-            {/* 10. Goal Progress */}
-            <div
-              className="dash-card p-5 rounded-2xl flex-1 flex flex-col justify-between"
-              style={{
-                background: isLight ? "#ffffff" : "#121215",
-                border: isLight ? "1px solid #e2e8f0" : "1px solid #222228",
-                borderRadius: 20,
-              }}
-            >
-              <h3 className="text-base font-bold flex items-center gap-2 mb-2">
-                <Zap size={18} className="text-amber-500" />
-                Monthly & Weekly Goals
-              </h3>
-
-              <div className="flex flex-col gap-3">
-                <div>
-                  <div className="flex justify-between text-xs font-bold mb-1">
-                    <span>Monthly Target (80h)</span>
-                    <span className="text-amber-500">60h / 80h (75%)</span>
+            <div className="flex flex-col gap-3.5">
+              {categories.map((cat, i) => (
+                <div key={i} className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <span>{cat.icon}</span> {cat.name}
+                    </span>
+                    <span className="opacity-70">{cat.hours}h ({cat.percent}%)</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-zinc-800 overflow-hidden">
-                    <div className="h-full bg-amber-500 rounded-full w-[75%]" />
+                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${cat.percent}%`, background: cat.color }}
+                    />
                   </div>
                 </div>
-
-                <div>
-                  <div className="flex justify-between text-xs font-bold mb-1">
-                    <span>Weekly Target (20h)</span>
-                    <span className="text-blue-500">18h / 20h (90%)</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-zinc-800 overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full w-[90%]" />
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
-
           </div>
 
           {/* 9. Achievements & Gamification Section */}
