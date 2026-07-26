@@ -11,6 +11,7 @@ export const Side = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [username, setUsername] = useState("Username");
+  const [streak, setStreak] = useState(1);
   const [greetingVisible, setGreetingVisible] = useState(false);
   const [nameVisible, setNameVisible] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -25,6 +26,36 @@ export const Side = () => {
   useEffect(() => {
     const stored = localStorage.getItem("username") || "Username";
     setUsername(stored);
+
+    // ── Dynamic Real Daily Streak Calculation ──
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    const lastVisit = localStorage.getItem("focusflow_last_visit");
+    const storedStreak = parseInt(localStorage.getItem("focusflow_streak") || "0", 10);
+
+    if (!lastVisit) {
+      setStreak(1);
+      localStorage.setItem("focusflow_streak", "1");
+      localStorage.setItem("focusflow_last_visit", todayStr);
+    } else if (lastVisit === todayStr) {
+      setStreak(storedStreak > 0 ? storedStreak : 1);
+    } else {
+      const lastDate = new Date(lastVisit);
+      const todayDate = new Date(todayStr);
+      const diffTime = Math.abs(todayDate - lastDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        const newStreak = (storedStreak > 0 ? storedStreak : 0) + 1;
+        setStreak(newStreak);
+        localStorage.setItem("focusflow_streak", String(newStreak));
+      } else {
+        setStreak(1);
+        localStorage.setItem("focusflow_streak", "1");
+      }
+      localStorage.setItem("focusflow_last_visit", todayStr);
+    }
 
     // Animate greeting first
     setTimeout(() => setGreetingVisible(true), 200);
@@ -246,7 +277,7 @@ export const Side = () => {
                 letterSpacing: "-0.2px",
                 whiteSpace: "nowrap",
               }}>
-                5 Day Streak!
+                {streak} Day{streak > 1 ? "s" : ""} Streak!
               </span>
               <span style={{
                 fontSize: "0.68rem",
