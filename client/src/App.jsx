@@ -155,7 +155,7 @@ function App() {
 
             {/* Dashboard */}
             <Route path="dashboard" element={
-              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+              <div style={{ minHeight: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
                 <Dashboard />
               </div>
             } />
