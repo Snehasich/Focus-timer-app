@@ -102,72 +102,68 @@ export default function Dashboard() {
   const dailyGoalPct = Math.min(100, Math.round((liveFocusSecondsToday / (4 * 3600)) * 100));
 
   // ─────────────────────────────────────────────────────────
-  //  LEETCODE-STYLE 52-WEEK CONTINUOUS HEATMAP
-  //  • grid-auto-flow: column  →  days flow top-to-bottom per week
-  //  • weeks flow left to right (52-53 columns)
-  //  • Month labels sit above the first week of each month
+  //  12 SEPARATE MONTH BLOCKS (authentic LeetCode style)
+  //  • 12 month columns side-by-side
+  //  • Each month: N weeks × 7 day rows (Sun top → Sat bottom)
+  //  • Month label sits at the BOTTOM of each block
   // ─────────────────────────────────────────────────────────
-  const heatmapData = useMemo(() => {
+  const heatmapMonths = useMemo(() => {
     const hm = stats?.heatmapData || {};
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const curY = now.getFullYear();
+    const curM = now.getMonth();
+    const months = [];
 
-    // Go back exactly 364 days (52 full weeks) from today
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 363); // 364 days inclusive = 52 weeks
+    for (let i = 11; i >= 0; i--) {
+      let m = curM - i;
+      let y = curY;
+      if (m < 0) { m += 12; y -= 1; }
 
-    // Align start to Sunday (LeetCode starts week on Sunday)
-    const startDow = startDate.getDay(); // 0=Sun
-    startDate.setDate(startDate.getDate() - startDow);
+      const firstOfMonth = new Date(y, m, 1);
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const startDow = firstOfMonth.getDay(); // 0=Sun
+      const totalCells = Math.ceil((startDow + daysInMonth) / 7) * 7;
+      const cells = [];
 
-    // Build array of all days from startDate to today
-    const days = [];
-    const cursor = new Date(startDate);
-    while (cursor <= today) {
-      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
-      const isToday = cursor.toDateString() === today.toDateString();
-      const isFuture = cursor > today;
-      let seconds = isFuture ? 0 : (hm[key] || 0);
-      if (isToday) seconds = Math.max(seconds, liveFocusSecondsToday);
+      for (let c = 0; c < totalCells; c++) {
+        const dayNum = c - startDow + 1;
+        const valid = dayNum >= 1 && dayNum <= daysInMonth;
+        const cellDate = valid ? new Date(y, m, dayNum) : null;
+        const isToday = cellDate ? cellDate.toDateString() === now.toDateString() : false;
+        const isFuture = cellDate ? cellDate > now : false;
 
-      const hrs = seconds / 3600;
-      let level = 0;
-      if (hrs > 0 && hrs <= 1.5) level = 1;
-      else if (hrs > 1.5 && hrs <= 3) level = 2;
-      else if (hrs > 3 && hrs <= 5) level = 3;
-      else if (hrs > 5) level = 4;
-
-      days.push({
-        date: new Date(cursor),
-        key,
-        seconds,
-        level,
-        isToday,
-        isFuture,
-        dateStr: cursor.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-      });
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    // Group into weeks (7-day columns)
-    const weeks = [];
-    for (let i = 0; i < days.length; i += 7) {
-      weeks.push(days.slice(i, i + 7));
-    }
-
-    // Compute month labels (attach to week index where month first appears)
-    const monthLabels = {}; // weekIndex → monthName
-    weeks.forEach((week, wi) => {
-      week.forEach((day) => {
-        if (day.date.getDate() === 1 || wi === 0) {
-          if (!monthLabels[wi]) {
-            monthLabels[wi] = day.date.toLocaleDateString("en-US", { month: "short" });
-          }
+        let seconds = 0;
+        if (valid && cellDate && !isFuture) {
+          const key = `${y}-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+          seconds = hm[key] || 0;
+          if (isToday) seconds = Math.max(seconds, liveFocusSecondsToday);
         }
-      });
-    });
 
-    return { weeks, monthLabels };
+        const hrs = seconds / 3600;
+        let level = 0;
+        if (hrs > 0 && hrs <= 1.5) level = 1;
+        else if (hrs > 1.5 && hrs <= 3) level = 2;
+        else if (hrs > 3 && hrs <= 5) level = 3;
+        else if (hrs > 5) level = 4;
+
+        const dateStr = cellDate
+          ? cellDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })
+          : "";
+
+        cells.push({ id: `${y}-${m}-${c}`, dayNum: valid ? dayNum : null, dateStr, seconds, level, valid, isToday, isFuture });
+      }
+
+      // Group rows of 7 into week columns (each column = one week)
+      const weeks = [];
+      for (let w = 0; w < cells.length; w += 7) weeks.push(cells.slice(w, w + 7));
+
+      months.push({
+        label: firstOfMonth.toLocaleDateString("en-US", { month: "short" }),
+        weeks,
+      });
+    }
+    return months;
   }, [stats, liveFocusSecondsToday]);
 
   const tileColor = (level, future) => {
@@ -250,69 +246,95 @@ export default function Dashboard() {
         @media(min-width:768px)  { .bot-g { grid-template-columns:1fr 1fr; } }
         @media(min-width:1024px) { .bot-g { grid-template-columns:1fr 1fr 1fr; } }
 
-        /* ── LeetCode-style heatmap ── */
-        .lc-wrap {
+        /* ── 12-month block heatmap ── */
+        .hm-scroll {
           width: 100%;
           overflow-x: auto;
           overflow-y: hidden;
-          padding-bottom: 4px;
+          padding-bottom: 2px;
         }
-        .lc-wrap::-webkit-scrollbar { height: 4px; }
-        .lc-wrap::-webkit-scrollbar-thumb { background: ${isLight ? "#cbd5e1" : "#333"}; border-radius: 4px; }
+        .hm-scroll::-webkit-scrollbar { height: 3px; }
+        .hm-scroll::-webkit-scrollbar-thumb { background: ${isLight ? "#cbd5e1" : "#2a2a2a"}; border-radius: 4px; }
 
-        .lc-inner  { display: inline-flex; flex-direction: column; gap: 0; min-width: max-content; }
-
-        /* Month label row */
-        .lc-months { display: flex; gap: 2.5px; margin-bottom: 4px; height: 14px; }
-        .lc-mlabel { font-size: 10px; font-weight: 700; opacity: 0.55;
-                     color: ${isLight ? "#475569" : "#94a3b8"}; }
-
-        /* Day-of-week + grid row */
-        .lc-body  { display: flex; gap: 4px; align-items: flex-start; }
-        .lc-dow   { display: flex; flex-direction: column; gap: 2.5px; margin-right: 4px; }
-        .lc-dow-label { height: 11px; font-size: 9px; font-weight: 700; opacity: 0.45;
-                        color: ${isLight ? "#475569" : "#94a3b8"}; line-height: 11px; }
-
-        /* The 52-week grid */
-        .lc-grid {
-          display: grid;
-          grid-auto-flow: column;
-          grid-template-rows: repeat(7, 11px);
-          gap: 2.5px;
+        /* 12 month blocks row */
+        .hm-months-row {
+          display: flex;
+          gap: 6px;
+          min-width: max-content;
+          align-items: flex-end;
+          padding: 4px 0;
         }
 
-        .lc-cell {
-          width: 11px; height: 11px;
+        /* Single month block */
+        .hm-month-block {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          flex-shrink: 0;
+        }
+
+        /* Week columns inside a month */
+        .hm-weeks {
+          display: flex;
+          flex-direction: row;
+          gap: 2px;
+          align-items: flex-start;
+        }
+        .hm-week-col {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        /* Individual day cell */
+        .hm-cell {
+          width: 10px;
+          height: 10px;
           border-radius: 2px;
           cursor: pointer;
           position: relative;
-          transition: transform .1s ease, outline .1s ease;
+          transition: transform 0.1s ease;
+          flex-shrink: 0;
         }
-        .lc-cell:hover { transform: scale(1.35); z-index: 30; }
+        .hm-cell:hover { transform: scale(1.4); z-index: 30; }
+        .hm-cell-empty { width: 10px; height: 10px; flex-shrink: 0; opacity: 0; }
+
+        /* Month label at bottom */
+        .hm-month-label {
+          font-size: 10px;
+          font-weight: 700;
+          opacity: 0.55;
+          color: ${isLight ? "#475569" : "#94a3b8"};
+          letter-spacing: 0.02em;
+          text-align: center;
+          margin-top: 2px;
+        }
 
         /* Tooltip */
-        .lc-tip {
+        .hm-tip {
           position: absolute;
-          bottom: calc(100% + 6px);
+          bottom: calc(100% + 7px);
           left: 50%;
           transform: translateX(-50%);
-          padding: 4px 8px;
-          border-radius: 6px;
-          font-size: 10px; font-weight: 700;
+          padding: 5px 9px;
+          border-radius: 7px;
+          font-size: 10px;
+          font-weight: 700;
           white-space: nowrap;
           pointer-events: none;
           z-index: 60;
-          background: ${isLight ? "#0f172a" : "#f8fafc"};
-          color: ${isLight ? "#fff" : "#0f172a"};
-          box-shadow: 0 4px 12px rgba(0,0,0,.25);
+          background: ${isLight ? "#0f172a" : "#f0f0f0"};
+          color: ${isLight ? "#fff" : "#111"};
+          box-shadow: 0 6px 18px rgba(0,0,0,0.3);
         }
-        .lc-tip::after {
+        .hm-tip::after {
           content: "";
           position: absolute;
           top: 100%; left: 50%;
           transform: translateX(-50%);
           border: 4px solid transparent;
-          border-top-color: ${isLight ? "#0f172a" : "#f8fafc"};
+          border-top-color: ${isLight ? "#0f172a" : "#f0f0f0"};
         }
       `}</style>
 
@@ -451,69 +473,56 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* ── The actual LeetCode grid ── */}
-          <div className="lc-wrap">
-            <div className="lc-inner">
-              {/* Month labels row */}
-              <div className="lc-months">
-                {heatmapData.weeks.map((week, wi) => (
-                  <div key={wi} style={{ width: 11, flexShrink: 0 }}>
-                    {heatmapData.monthLabels[wi] && (
-                      <span className="lc-mlabel">{heatmapData.monthLabels[wi]}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Day labels + grid */}
-              <div className="lc-body">
-                {/* Day-of-week labels (Sun Mon … Sat) */}
-                <div className="lc-dow">
-                  {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d, i) => (
-                    <div key={d} className="lc-dow-label"
-                      style={{ visibility: i % 2 === 1 ? "visible" : "hidden" }}>
-                      {d}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Grid — 52 columns × 7 rows, auto-flow column */}
-                <div className="lc-grid">
-                  {heatmapData.weeks.map((week) =>
-                    week.map((day) => {
-                      const isHov = hoveredCell === day.key;
-                      return (
-                        <div
-                          key={day.key}
-                          className="lc-cell"
-                          style={{
-                            background: tileColor(day.level, day.isFuture),
-                            outline: day.isToday ? "2px solid #10b981" : "none",
-                            outlineOffset: "1px",
-                            opacity: day.isFuture ? 0 : 1,
-                          }}
-                          onMouseEnter={() => !day.isFuture && setHoveredCell(day.key)}
-                          onMouseLeave={() => setHoveredCell(null)}
-                        >
-                          {isHov && (
-                            <div className="lc-tip">
-                              {day.dateStr} —{" "}
-                              {day.seconds > 0
-                                ? <span style={{ color: "#2cbb5d" }}>{fmtTime(day.seconds)} focused</span>
-                                : <span style={{ opacity: 0.6 }}>No activity</span>
-                              }
+          {/* ── 12-Month Block Grid ── */}
+          <div className="hm-scroll">
+            <div className="hm-months-row">
+              {heatmapMonths.map((month, mIdx) => (
+                <div key={mIdx} className="hm-month-block">
+                  {/* Week columns */}
+                  <div className="hm-weeks">
+                    {month.weeks.map((week, wIdx) => (
+                      <div key={wIdx} className="hm-week-col">
+                        {week.map((cell) => {
+                          if (!cell.valid) {
+                            return <div key={cell.id} className="hm-cell-empty" />;
+                          }
+                          const isHov = hoveredCell === cell.id;
+                          return (
+                            <div
+                              key={cell.id}
+                              className="hm-cell"
+                              style={{
+                                background: tileColor(cell.level, cell.isFuture),
+                                outline: cell.isToday ? "2px solid #10b981" : "none",
+                                outlineOffset: "1px",
+                                opacity: cell.isFuture ? 0 : 1,
+                              }}
+                              onMouseEnter={() => !cell.isFuture && setHoveredCell(cell.id)}
+                              onMouseLeave={() => setHoveredCell(null)}
+                            >
+                              {isHov && (
+                                <div className="hm-tip">
+                                  {cell.dateStr} —{" "}
+                                  {cell.seconds > 0
+                                    ? <span style={{ color: "#2cbb5d" }}>{fmtTime(cell.seconds)} focused</span>
+                                    : <span style={{ opacity: 0.55 }}>No activity</span>
+                                  }
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Month label — bottom */}
+                  <span className="hm-month-label">{month.label}</span>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Bottom stats row — LeetCode style */}
+          {/* Bottom stats */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 pt-3 border-t text-xs font-bold"
             style={{ borderColor: isLight ? "#e2e8f0" : "#27272a" }}>
             <span>🔥 Current Streak: <strong className="text-orange-500">{stats?.currentStreak ?? 0} Days</strong></span>
