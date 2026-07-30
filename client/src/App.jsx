@@ -9,6 +9,7 @@ import Dashboard from "./components/Dashboard";
 import FocusBreak from "./components/Timer/FocusBreak";
 import CalendarView from "./components/CalendarView";
 import NotesView from "./components/NotesView";
+import { logLogin } from "./services/activityService";
 
 // 🔐 Private Route
 const PrivateRoute = ({ children }) => {
@@ -24,10 +25,20 @@ const PublicRoute = ({ children }) => {
 
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { TimerProvider } from "./context/TimerContext";
+import { useEffect } from "react";
 
 // 📦 Layout
 const Layout = () => {
   const { theme, sidebarOpen, toggleSidebar } = useTheme();
+
+  // Record today's login visit in DB when app is opened (only if token exists)
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      logLogin();
+    }
+  }, []);
+
   return (
     <div 
       className="h-screen w-full flex overflow-hidden transition-all duration-200"
@@ -155,7 +166,7 @@ function App() {
 
             {/* Dashboard */}
             <Route path="dashboard" element={
-              <div style={{ minHeight: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+              <div style={{ minHeight: "100vh", padding: "clamp(12px, 3vw, 24px)", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
                 <Dashboard />
               </div>
             } />
