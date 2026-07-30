@@ -202,18 +202,13 @@ export default function Dashboard() {
     boxShadow: isLight ? "0 2px 16px rgba(15,23,42,0.04)" : "none",
   };
 
-  const categories = [
-    { name: "React & Frontend", percent: 85, color: "#3b82f6", icon: "⚛️" },
-    { name: "Data Structures", percent: 70, color: "#10b981", icon: "🧩" },
-    { name: "Databases (SQL)", percent: 55, color: "#8b5cf6", icon: "🗄️" },
-    { name: "OS & Networks", percent: 40, color: "#f59e0b", icon: "💻" },
-  ];
-
   const badges = [
-    { title: "7-Day Streak", icon: "🔥", unlocked: (stats?.currentStreak || 0) >= 7 },
-    { title: "10 Tasks Done", icon: "🏆", unlocked: (stats?.tasksCompleted || 0) >= 10 },
-    { title: "Early Bird", icon: "🌅", unlocked: true },
-    { title: "4h Focus Day", icon: "⚡", unlocked: liveFocusSecondsToday >= 4 * 3600 },
+    { title: "7-Day Streak", desc: "Reach a 7-day focus streak", icon: "🔥", unlocked: (stats?.currentStreak || 0) >= 7 },
+    { title: "10 Tasks Completed", desc: "Finish 10 total tasks", icon: "🏆", unlocked: (stats?.tasksCompleted || 0) >= 10 },
+    { title: "Early Bird", desc: "Log focus session before 9 AM", icon: "🌅", unlocked: true },
+    { title: "4-Hour Focus Day", desc: "Complete 4 hours in a single day", icon: "⚡", unlocked: liveFocusSecondsToday >= 4 * 3600 },
+    { title: "Focus Apprentice", desc: "Log your first pomodoro", icon: "🎯", unlocked: (stats?.totalActiveDays || 0) >= 1 },
+    { title: "Consistency Master", desc: "Log active focus for 30 days", icon: "👑", unlocked: (stats?.totalActiveDays || 0) >= 30 },
   ];
 
   // ── Skeleton pill ──
@@ -244,8 +239,6 @@ export default function Dashboard() {
 
         /* bottom row */
         .bot-g { display:grid; grid-template-columns:1fr; gap:16px; }
-        @media(min-width:768px)  { .bot-g { grid-template-columns:1fr 1fr; } }
-        @media(min-width:1024px) { .bot-g { grid-template-columns:1fr 1fr 1fr; } }
 
         /* ── 12-month block heatmap ── */
         .hm-scroll {
@@ -607,83 +600,41 @@ export default function Dashboard() {
         </div>
 
         {/* ══════════════════════════════════════
-            5. BOTTOM — Schedule + Analytics + Achievements
+            5. BOTTOM — Achievements & Milestones
         ══════════════════════════════════════ */}
         <div className="bot-g">
-          {/* Schedule */}
-          <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
-            <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-              <ListTodo size={15} className="text-blue-500" />Upcoming
-            </h3>
-            {[
-              { title:"Review State Management PR",  time:"2:30 PM",      pri:"High" },
-              { title:"Solve 2 LeetCode Problems",   time:"5:00 PM",      pri:"Med"  },
-              { title:"DBMS Indexing Video",         time:"7:30 PM",      pri:"Normal"},
-              { title:"Weekly Retrospective",        time:"Tomorrow 10AM",pri:"High" },
-            ].map((item,i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl gap-2"
-                style={{ background: isLight?"#f8fafc":"#19191d", border:`1px solid ${isLight?"#f1f5f9":"#222228"}` }}>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold truncate">{item.title}</p>
-                  <p className="text-[10px] opacity-50 font-semibold">{item.time}</p>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0"
-                  style={{
-                    background: item.pri==="High"?"rgba(239,68,68,.12)":"rgba(59,130,246,.12)",
-                    color: item.pri==="High"?"#ef4444":"#3b82f6",
-                  }}>{item.pri}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Subject analytics */}
           <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-4" style={card}>
-            <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-              <BookOpen size={15} className="text-purple-500" />Subject Analytics
-            </h3>
-            <div className="flex flex-col gap-3.5">
-              {categories.map((c,i) => (
-                <div key={i} className="flex flex-col gap-1">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="flex items-center gap-1.5">{c.icon}{c.name}</span>
-                    <span className="opacity-55">{c.percent}%</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isLight?"#e2e8f0":"#27272a" }}>
-                    <div className="h-full rounded-full transition-all duration-700"
-                      style={{ width:`${c.percent}%`, background:c.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Achievements */}
-          <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
             <div className="flex items-center justify-between">
               <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <Trophy size={15} className="text-yellow-500" />Achievements
+                <Trophy size={16} className="text-yellow-500" />
+                Achievements &amp; Milestones
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                style={{ background:"rgba(234,179,8,.12)", color:"#eab308" }}>Level 5</span>
+              <span className="px-3 py-1 rounded-full text-xs font-bold"
+                style={{ background: "rgba(234,179,8,0.12)", color: "#eab308" }}>Level 5</span>
             </div>
-            {/* XP */}
-            <div className="p-3 rounded-xl" style={{ background:isLight?"#f8fafc":"#19191d" }}>
-              <div className="flex justify-between text-xs font-bold mb-1.5">
+
+            {/* XP progress */}
+            <div className="p-4 rounded-xl" style={{ background: isLight ? "#f8fafc" : "#19191d" }}>
+              <div className="flex justify-between text-xs font-bold mb-2">
                 <span>Deep Work Master</span>
                 <span className="text-yellow-500">2,450 / 3,000 XP</span>
               </div>
-              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background:isLight?"#e2e8f0":"#27272a" }}>
-                <div style={{ width:"81%",height:"100%",borderRadius:99,background:"linear-gradient(90deg,#f59e0b,#eab308)" }} />
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
+                <div style={{ width: "81%", height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#f59e0b,#eab308)" }} />
               </div>
             </div>
-            {/* Badges */}
-            <div className="grid grid-cols-2 gap-2">
-              {badges.map((b,i) => (
+
+            {/* Badges Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {badges.map((b, i) => (
                 <div key={i}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl border ${b.unlocked?"":"opacity-35 grayscale"}`}
-                  style={{ background:isLight?"#fff":"#19191d", borderColor:isLight?"#f1f5f9":"#27272a" }}>
-                  <span className="text-base flex-shrink-0">{b.icon}</span>
-                  <span className="text-[10px] font-bold leading-tight truncate">{b.title}</span>
+                  className={`flex items-center gap-3 p-3 rounded-xl border ${b.unlocked ? "" : "opacity-35 grayscale"}`}
+                  style={{ background: isLight ? "#fff" : "#19191d", borderColor: isLight ? "#f1f5f9" : "#27272a" }}>
+                  <span className="text-2xl flex-shrink-0">{b.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold leading-snug truncate">{b.title}</p>
+                    <p className="text-[10px] opacity-50 truncate">{b.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
