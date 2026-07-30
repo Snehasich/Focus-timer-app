@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const instance = axios.create({
-  baseURL: "https://focus-timer-app-2.onrender.com"
+  baseURL: "https://focus-timer-app-1.onrender.com"
 });
 
 instance.interceptors.request.use((config) => {

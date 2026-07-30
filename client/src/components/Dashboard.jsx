@@ -342,40 +342,7 @@ export default function Dashboard() {
       <div className="dash-root w-full flex flex-col gap-4 sm:gap-5"
         style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
 
-        {/* ── Status banner: only one at a time ── */}
-        {backendOnline === false && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold"
-            style={{
-              background: "rgba(239,68,68,0.08)",
-              border: "1px solid rgba(239,68,68,0.22)",
-              color: "#ef4444",
-            }}>
-            <WifiOff size={13} />
-            Backend offline — stats shown from local session only. Backend may be waking up (Render free tier).
-            <button onClick={fetchStats}
-              className="ml-auto flex items-center gap-1 underline opacity-80 hover:opacity-100 transition-opacity">
-              <RefreshCw size={11} /> Retry
-            </button>
-          </div>
-        )}
-        {backendOnline === true && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold"
-            style={{
-              background: "rgba(16,185,129,0.08)",
-              border: "1px solid rgba(16,185,129,0.22)",
-              color: "#10b981",
-            }}>
-            <Wifi size={13} />
-            Backend connected — all stats are live &amp; synced to your account
-          </div>
-        )}
-        {/* Auth/session error (separate from offline) */}
-        {error && backendOnline === true && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
-            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
-            <AlertCircle size={13} />{error}
-          </div>
-        )}
+
 
         {/* ══════════════════════════════════════
             1. TOP — Greeting
