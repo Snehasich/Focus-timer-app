@@ -36,13 +36,14 @@ export default function Dashboard() {
       setBackendOnline(true);
     } catch (err) {
       const status = err?.response?.status;
-      // 401/403 = backend online but auth failed → still "online"
+      // 401/403 = backend alive but token invalid
       if (status === 401 || status === 403) {
         setBackendOnline(true);
-        setError("Session expired. Please log in again.");
+        setError("Session expired. Please re-login.");
       } else {
+        // Any other error = backend unreachable; banner already covers the message
         setBackendOnline(false);
-        setError("Backend offline — showing local data only.");
+        setError(null); // no duplicate message
       }
     } finally {
       setLoading(false);
@@ -341,27 +342,35 @@ export default function Dashboard() {
       <div className="dash-root w-full flex flex-col gap-4 sm:gap-5"
         style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
 
-        {/* ── Backend status banner ── */}
-        {backendOnline !== null && (
+        {/* ── Status banner: only one at a time ── */}
+        {backendOnline === false && (
           <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold"
             style={{
-              background: backendOnline ? "rgba(16,185,129,0.09)" : "rgba(239,68,68,0.09)",
-              border: `1px solid ${backendOnline ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`,
-              color: backendOnline ? "#10b981" : "#ef4444",
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.22)",
+              color: "#ef4444",
             }}>
-            {backendOnline ? <Wifi size={13} /> : <WifiOff size={13} />}
-            {backendOnline
-              ? "Backend connected — all stats are live & synced to your account"
-              : "Backend offline — stats shown from local session only"}
-            {!backendOnline && (
-              <button onClick={fetchStats}
-                className="ml-auto flex items-center gap-1 underline opacity-80 hover:opacity-100">
-                <RefreshCw size={11} /> Retry
-              </button>
-            )}
+            <WifiOff size={13} />
+            Backend offline — stats shown from local session only. Backend may be waking up (Render free tier).
+            <button onClick={fetchStats}
+              className="ml-auto flex items-center gap-1 underline opacity-80 hover:opacity-100 transition-opacity">
+              <RefreshCw size={11} /> Retry
+            </button>
           </div>
         )}
-        {error && (
+        {backendOnline === true && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold"
+            style={{
+              background: "rgba(16,185,129,0.08)",
+              border: "1px solid rgba(16,185,129,0.22)",
+              color: "#10b981",
+            }}>
+            <Wifi size={13} />
+            Backend connected — all stats are live &amp; synced to your account
+          </div>
+        )}
+        {/* Auth/session error (separate from offline) */}
+        {error && backendOnline === true && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
             style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
             <AlertCircle size={13} />{error}
