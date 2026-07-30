@@ -68,21 +68,44 @@ export const TaskRouteTask = memo(({
 
   const handleAddTask = () => {
     if (input.trim() === "") return;
-    instance.post("/tasks", { text: input, completed: false })
-      .then(() => { fetchTasks(); setInput(""); })
-      .catch((err) => console.error("Add error:", err));
+    const newTaskText = input.trim();
+    setInput("");
+
+    // Optimistic UI addition: display task instantly
+    const tempId = Date.now();
+    const tempTask = { id: tempId, text: newTaskText, completed: false };
+    setTasks((prev) => [...prev, tempTask]);
+
+    instance.post("/tasks", { text: newTaskText, completed: false })
+      .then((res) => {
+        if (res.data && res.data.id) {
+          setTasks((prev) => prev.map((t) => (t.id === tempId ? res.data : t)));
+        } else {
+          fetchTasks();
+        }
+      })
+      .catch((err) => {
+        console.error("Add error:", err);
+        fetchTasks();
+      });
   };
 
   const toggleTask = (task) => {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, completed: !t.completed } : t)));
     instance.put(`/tasks/${task.id}`, { ...task, completed: !task.completed })
-      .then(() => fetchTasks())
-      .catch((err) => console.error("Toggle error:", err));
+      .catch((err) => {
+        console.error("Toggle error:", err);
+        fetchTasks();
+      });
   };
 
   const deleteTask = (id) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     instance.delete(`/tasks/${id}`)
-      .then(() => fetchTasks())
-      .catch((err) => console.error("Delete error:", err));
+      .catch((err) => {
+        console.error("Delete error:", err);
+        fetchTasks();
+      });
   };
 
   const completedCount = tasks.filter((t) => t.completed).length;
