@@ -4,7 +4,7 @@ import {
   Clock, CheckCircle2, Flame, Target, TrendingUp,
   Calendar as CalendarIcon, BarChart3, BookOpen,
   CheckSquare, ChevronRight, Trophy, Play, Activity, ListTodo,
-  RefreshCw, AlertCircle
+  RefreshCw, AlertCircle, Wifi, WifiOff
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useTimer } from "../context/TimerContext";
@@ -16,172 +16,180 @@ export default function Dashboard() {
   const { focusLoop, focusTime, focusInitialTime, isFocusRunning } = useTimer();
   const isLight = theme === "light";
 
-  // ── State ──
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [username, setUsername] = useState("User");
-  const [activeTab, setActiveTab] = useState("thisWeek");
+  const [stats, setStats]           = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+  const [backendOnline, setBackendOnline] = useState(null); // null = checking
+  const [username, setUsername]     = useState("User");
+  const [activeTab, setActiveTab]   = useState("thisWeek");
   const [hoveredDay, setHoveredDay] = useState(null);
   const [hoveredCell, setHoveredCell] = useState(null);
 
-  // Track previous focusLoop to detect newly completed sessions
   const prevFocusLoopRef = useRef(focusLoop);
 
-  // ── Fetch dashboard stats from backend ──
+  // ── Fetch stats & check backend ──
   const fetchStats = useCallback(async () => {
     try {
       setError(null);
       const data = await getDashboardStats();
       setStats(data);
+      setBackendOnline(true);
     } catch (err) {
-      setError("Could not load stats. Backend may be offline.");
+      const status = err?.response?.status;
+      // 401/403 = backend online but auth failed → still "online"
+      if (status === 401 || status === 403) {
+        setBackendOnline(true);
+        setError("Session expired. Please log in again.");
+      } else {
+        setBackendOnline(false);
+        setError("Backend offline — showing local data only.");
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem("username") || "User";
-    setUsername(stored);
+    setUsername(localStorage.getItem("username") || "User");
     fetchStats();
   }, [fetchStats]);
 
-  // ── Auto-log focus session whenever focusLoop increments ──
+  // Auto-log when a focus session completes
   useEffect(() => {
     if (focusLoop > prevFocusLoopRef.current) {
-      const newSessions = focusLoop - prevFocusLoopRef.current;
-      const seconds = newSessions * 50 * 60; // 50 min per session
-      logFocusSession(seconds, newSessions).then(() => {
-        fetchStats(); // Refresh stats after logging
-      });
+      const diff = focusLoop - prevFocusLoopRef.current;
+      logFocusSession(diff * 50 * 60, diff).then(fetchStats);
     }
     prevFocusLoopRef.current = focusLoop;
   }, [focusLoop, fetchStats]);
 
-  // ── Live focus time today (timer + DB stats combined) ──
+  // ── Live focus seconds today ──
   const liveFocusSecondsToday = useMemo(() => {
-    const dbSeconds = stats?.focusSecondsToday || 0;
-    const currentElapsed = isFocusRunning ? Math.max(0, focusInitialTime - focusTime) : 0;
-    // focusLoop already counted in DB (logged above). Add only current in-progress session
-    return dbSeconds + currentElapsed;
+    const db = stats?.focusSecondsToday || 0;
+    const live = isFocusRunning ? Math.max(0, focusInitialTime - focusTime) : 0;
+    return db + live;
   }, [stats, focusTime, focusInitialTime, isFocusRunning]);
 
-  const formattedFocusTime = useMemo(() => {
-    const totalMins = Math.floor(liveFocusSecondsToday / 60);
-    const hrs = Math.floor(totalMins / 60);
-    const mins = totalMins % 60;
-    if (hrs === 0 && mins === 0) return "0m";
-    if (hrs === 0) return `${mins}m`;
-    return `${hrs}h ${mins}m`;
-  }, [liveFocusSecondsToday]);
+  const fmtTime = (s) => {
+    const m = Math.floor(s / 60), h = Math.floor(m / 60), r = m % 60;
+    if (h === 0 && r === 0) return "0m";
+    if (h === 0) return `${r}m`;
+    return `${h}h ${r}m`;
+  };
 
   // ── Greeting ──
-  const greetingData = useMemo(() => {
+  const greeting = useMemo(() => {
     const h = new Date().getHours();
     if (h < 12) return { text: "Good Morning", icon: "🌅" };
     if (h < 17) return { text: "Good Afternoon", icon: "☀️" };
     return { text: "Good Evening", icon: "🌙" };
   }, []);
 
-  // ── Daily Quote ──
   const quote = useMemo(() => {
-    const quotes = [
-      "\"Focus is a muscle. The more you practice, the stronger it gets.\"",
-      "\"Small daily improvements over time lead to stunning results.\"",
-      "\"You don't have to be extreme, just consistent.\"",
-      "\"Do something today that your future self will thank you for.\"",
-      "\"Concentrate all your thoughts upon the work in hand.\"",
+    const qs = [
+      "Focus is the art of knowing what to ignore.",
+      "Small steps every day lead to big results.",
+      "Consistency beats intensity every time.",
+      "Do the work. The results will come.",
+      "Concentrate all your thoughts upon the work at hand.",
     ];
-    return quotes[new Date().getDate() % quotes.length];
+    return qs[new Date().getDate() % qs.length];
   }, []);
 
-  const formattedDate = useMemo(() =>
-    new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" }),
-    []);
+  const fmtDate = useMemo(() =>
+    new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" }), []);
 
-  // ── Daily goal: 4 hours ──
-  const dailyGoalPercent = useMemo(() =>
-    Math.min(100, Math.round((liveFocusSecondsToday / (4 * 3600)) * 100)),
-    [liveFocusSecondsToday]);
+  const dailyGoalPct = Math.min(100, Math.round((liveFocusSecondsToday / (4 * 3600)) * 100));
 
-  // ── Heatmap: 12 months, fixed-size, real data ──
-  const heatmapMonths = useMemo(() => {
-    const heatmapData = stats?.heatmapData || {};
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    const months = [];
+  // ─────────────────────────────────────────────────────────
+  //  LEETCODE-STYLE 52-WEEK CONTINUOUS HEATMAP
+  //  • grid-auto-flow: column  →  days flow top-to-bottom per week
+  //  • weeks flow left to right (52-53 columns)
+  //  • Month labels sit above the first week of each month
+  // ─────────────────────────────────────────────────────────
+  const heatmapData = useMemo(() => {
+    const hm = stats?.heatmapData || {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    for (let i = 11; i >= 0; i--) {
-      let m = currentMonth - i;
-      let y = currentYear;
-      if (m < 0) { m += 12; y -= 1; }
+    // Go back exactly 364 days (52 full weeks) from today
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - 363); // 364 days inclusive = 52 weeks
 
-      const monthDate = new Date(y, m, 1);
-      const monthName = monthDate.toLocaleDateString("en-US", { month: "short" });
-      const daysInMonth = new Date(y, m + 1, 0).getDate();
-      const firstDow = monthDate.getDay();
-      const totalCells = Math.ceil((firstDow + daysInMonth) / 7) * 7;
-      const cells = [];
+    // Align start to Sunday (LeetCode starts week on Sunday)
+    const startDow = startDate.getDay(); // 0=Sun
+    startDate.setDate(startDate.getDate() - startDow);
 
-      for (let c = 0; c < totalCells; c++) {
-        const dayNum = c - firstDow + 1;
-        const isValid = dayNum >= 1 && dayNum <= daysInMonth;
-        const cellDate = isValid ? new Date(y, m, dayNum) : null;
-        const isToday = cellDate ? cellDate.toDateString() === now.toDateString() : false;
-        const isFuture = cellDate ? cellDate > now : false;
+    // Build array of all days from startDate to today
+    const days = [];
+    const cursor = new Date(startDate);
+    while (cursor <= today) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+      const isToday = cursor.toDateString() === today.toDateString();
+      const isFuture = cursor > today;
+      let seconds = isFuture ? 0 : (hm[key] || 0);
+      if (isToday) seconds = Math.max(seconds, liveFocusSecondsToday);
 
-        let seconds = 0;
-        if (isValid && cellDate && !isFuture) {
-          const key = `${y}-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-          seconds = heatmapData[key] || 0;
-          if (isToday) seconds = Math.max(seconds, liveFocusSecondsToday);
-        }
+      const hrs = seconds / 3600;
+      let level = 0;
+      if (hrs > 0 && hrs <= 1.5) level = 1;
+      else if (hrs > 1.5 && hrs <= 3) level = 2;
+      else if (hrs > 3 && hrs <= 5) level = 3;
+      else if (hrs > 5) level = 4;
 
-        const hours = seconds / 3600;
-        let level = 0;
-        if (hours > 0 && hours <= 1.5) level = 1;
-        else if (hours > 1.5 && hours <= 3.5) level = 2;
-        else if (hours > 3.5 && hours <= 5.5) level = 3;
-        else if (hours > 5.5) level = 4;
-
-        const dateStr = cellDate
-          ? cellDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-          : "";
-        const cellId = `${y}-${m}-${c}`;
-
-        cells.push({ id: cellId, dayNum: isValid ? dayNum : null, dateStr, hours: hours.toFixed(1), level, isValid, isToday, isFuture });
-      }
-
-      // Group into columns of 7 (rows = Sun–Sat)
-      const weeks = [];
-      for (let w = 0; w < cells.length; w += 7) weeks.push(cells.slice(w, w + 7));
-
-      months.push({ monthName, weeks });
+      days.push({
+        date: new Date(cursor),
+        key,
+        seconds,
+        level,
+        isToday,
+        isFuture,
+        dateStr: cursor.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+      });
+      cursor.setDate(cursor.getDate() + 1);
     }
-    return months;
+
+    // Group into weeks (7-day columns)
+    const weeks = [];
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push(days.slice(i, i + 7));
+    }
+
+    // Compute month labels (attach to week index where month first appears)
+    const monthLabels = {}; // weekIndex → monthName
+    weeks.forEach((week, wi) => {
+      week.forEach((day) => {
+        if (day.date.getDate() === 1 || wi === 0) {
+          if (!monthLabels[wi]) {
+            monthLabels[wi] = day.date.toLocaleDateString("en-US", { month: "short" });
+          }
+        }
+      });
+    });
+
+    return { weeks, monthLabels };
   }, [stats, liveFocusSecondsToday]);
 
-  const tileColor = (level) => {
-    if (level === 0) return isLight ? "#e2e8f0" : "#262626";
+  const tileColor = (level, future) => {
+    if (future) return isLight ? "#f1f5f9" : "#1a1a1a";
+    if (level === 0) return isLight ? "#ebedf0" : "#262626";
     if (level === 1) return isLight ? "#9be9a8" : "#0e4429";
     if (level === 2) return isLight ? "#40c463" : "#006d32";
     if (level === 3) return isLight ? "#30a14e" : "#26a641";
     return "#2cbb5d";
   };
 
-  // ── Weekly chart data ──
+  // ── Weekly chart ──
   const weeklyChartData = useMemo(() => {
-    if (!stats?.weeklyData) return [];
+    if (!stats?.weeklyData) return Array(7).fill({ day: "—", hours: 0, isToday: false, dateStr: "" });
     return stats.weeklyData.map((d) => {
-      const dateObj = new Date(d.date);
-      const isToday = dateObj.toDateString() === new Date().toDateString();
-      const seconds = isToday ? Math.max(d.focusSeconds || 0, liveFocusSecondsToday) : (d.focusSeconds || 0);
+      const dt = new Date(d.date);
+      const isToday = dt.toDateString() === new Date().toDateString();
+      const secs = isToday ? Math.max(d.focusSeconds || 0, liveFocusSecondsToday) : (d.focusSeconds || 0);
       return {
-        day: dateObj.toLocaleDateString("en-US", { weekday: "short" }),
-        dateStr: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        hours: parseFloat((seconds / 3600).toFixed(1)),
+        day: dt.toLocaleDateString("en-US", { weekday: "short" }),
+        dateStr: dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        hours: parseFloat((secs / 3600).toFixed(1)),
         isToday,
       };
     });
@@ -189,473 +197,475 @@ export default function Dashboard() {
 
   const maxHours = Math.max(...weeklyChartData.map((d) => d.hours), 1);
 
-  // ── Category analytics (static for now, can be made dynamic) ──
+  // ── Shared styles ──
+  const card = {
+    background: isLight ? "#ffffff" : "#111114",
+    border: `1px solid ${isLight ? "#e2e8f0" : "#222228"}`,
+    borderRadius: 18,
+    boxShadow: isLight ? "0 2px 16px rgba(15,23,42,0.04)" : "none",
+  };
+
   const categories = [
-    { name: "React & Frontend", hours: 14.5, percent: 85, color: "#3b82f6", icon: "⚛️" },
-    { name: "Data Structures & Algorithms", hours: 12.0, percent: 70, color: "#10b981", icon: "🧩" },
-    { name: "Database Management (SQL)", hours: 8.5, percent: 55, color: "#8b5cf6", icon: "🗄️" },
-    { name: "Operating Systems", hours: 6.0, percent: 40, color: "#f59e0b", icon: "💻" },
+    { name: "React & Frontend", percent: 85, color: "#3b82f6", icon: "⚛️" },
+    { name: "Data Structures", percent: 70, color: "#10b981", icon: "🧩" },
+    { name: "Databases (SQL)", percent: 55, color: "#8b5cf6", icon: "🗄️" },
+    { name: "OS & Networks", percent: 40, color: "#f59e0b", icon: "💻" },
   ];
 
-  // ── Achievements ──
   const badges = [
-    { title: "7-Day Streak", icon: "🔥", unlocked: (stats?.currentStreak || 0) >= 7, color: "#f97316" },
-    { title: "Focus Champion", icon: "🏆", unlocked: (stats?.tasksCompleted || 0) >= 10, color: "#eab308" },
-    { title: "Early Bird", icon: "🌅", unlocked: true, color: "#06b6d4" },
-    { title: "Marathoner", icon: "⚡", unlocked: liveFocusSecondsToday >= 4 * 3600, color: "#a855f7" },
+    { title: "7-Day Streak", icon: "🔥", unlocked: (stats?.currentStreak || 0) >= 7 },
+    { title: "10 Tasks Done", icon: "🏆", unlocked: (stats?.tasksCompleted || 0) >= 10 },
+    { title: "Early Bird", icon: "🌅", unlocked: true },
+    { title: "4h Focus Day", icon: "⚡", unlocked: liveFocusSecondsToday >= 4 * 3600 },
   ];
 
-  // ── Skeleton loader ──
-  const Skeleton = ({ w = "100%", h = 28, r = 8 }) => (
-    <div style={{ width: w, height: h, borderRadius: r, background: isLight ? "#e2e8f0" : "#27272a", animation: "pulse 1.5s ease infinite" }} />
+  // ── Skeleton pill ──
+  const SK = ({ w = "80px", h = 24 }) => (
+    <div style={{ width: w, height: h, borderRadius: 6, background: isLight ? "#e2e8f0" : "#27272a",
+      animation: "skpulse 1.5s ease infinite" }} />
   );
 
-  // ── Shared card style ──
-  const card = {
-    background: isLight ? "#ffffff" : "#121215",
-    border: `1px solid ${isLight ? "#e2e8f0" : "#222228"}`,
-    borderRadius: 20,
-    boxShadow: isLight ? "0 4px 20px rgba(15,23,42,0.03)" : "none",
-  };
+  const taskPct = stats?.tasksTotal ? Math.round((stats.tasksCompleted / stats.tasksTotal) * 100) : 0;
 
   return (
     <>
       <style>{`
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .dash-in { animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
-        .hov-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
-        .hov-card:hover { transform: translateY(-2px); }
-        .hov-tile:hover { transform: scale(1.3); z-index: 20; }
+        @keyframes fadeUp   { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes skpulse  { 0%,100%{opacity:1} 50%{opacity:.45} }
 
-        /* ── Responsive helpers ── */
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .mid-grid   { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        .bot-grid   { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .dash-root { animation: fadeUp 0.3s cubic-bezier(.16,1,.3,1) forwards; }
+        .hov-lift   { transition: transform .18s ease, box-shadow .18s ease; }
+        .hov-lift:hover { transform: translateY(-2px); }
 
-        @media (min-width: 640px) {
-          .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        /* stats grid */
+        .stats-g { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        @media(min-width:1024px){ .stats-g { grid-template-columns:repeat(4,1fr); gap:16px; } }
+
+        /* mid row */
+        .mid-g { display:grid; grid-template-columns:1fr; gap:16px; }
+        @media(min-width:1024px){ .mid-g { grid-template-columns:2fr 1fr; } }
+
+        /* bottom row */
+        .bot-g { display:grid; grid-template-columns:1fr; gap:16px; }
+        @media(min-width:768px)  { .bot-g { grid-template-columns:1fr 1fr; } }
+        @media(min-width:1024px) { .bot-g { grid-template-columns:1fr 1fr 1fr; } }
+
+        /* ── LeetCode-style heatmap ── */
+        .lc-wrap {
+          width: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding-bottom: 4px;
         }
-        @media (min-width: 1024px) {
-          .stats-grid { grid-template-columns: repeat(4, 1fr); }
-          .mid-grid   { grid-template-columns: 2fr 1fr; }
-          .bot-grid   { grid-template-columns: 1fr 1fr 1fr; }
-        }
+        .lc-wrap::-webkit-scrollbar { height: 4px; }
+        .lc-wrap::-webkit-scrollbar-thumb { background: ${isLight ? "#cbd5e1" : "#333"}; border-radius: 4px; }
 
-        /* ── Fixed heatmap: 12 months in a fixed grid, no horizontal scroll ── */
-        .heatmap-grid {
+        .lc-inner  { display: inline-flex; flex-direction: column; gap: 0; min-width: max-content; }
+
+        /* Month label row */
+        .lc-months { display: flex; gap: 2.5px; margin-bottom: 4px; height: 14px; }
+        .lc-mlabel { font-size: 10px; font-weight: 700; opacity: 0.55;
+                     color: ${isLight ? "#475569" : "#94a3b8"}; }
+
+        /* Day-of-week + grid row */
+        .lc-body  { display: flex; gap: 4px; align-items: flex-start; }
+        .lc-dow   { display: flex; flex-direction: column; gap: 2.5px; margin-right: 4px; }
+        .lc-dow-label { height: 11px; font-size: 9px; font-weight: 700; opacity: 0.45;
+                        color: ${isLight ? "#475569" : "#94a3b8"}; line-height: 11px; }
+
+        /* The 52-week grid */
+        .lc-grid {
           display: grid;
-          grid-template-columns: repeat(12, 1fr);
-          gap: 6px;
-          width: 100%;
+          grid-auto-flow: column;
+          grid-template-rows: repeat(7, 11px);
+          gap: 2.5px;
         }
-        .heatmap-month { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
-        .heatmap-weeks { display: flex; gap: 1.5px; flex: 1; min-width: 0; }
-        .heatmap-col   { display: flex; flex-direction: column; gap: 1.5px; }
-        .heatmap-cell  {
+
+        .lc-cell {
+          width: 11px; height: 11px;
           border-radius: 2px;
-          aspect-ratio: 1;
-          width: 100%;
-          min-width: 3px;
           cursor: pointer;
-          transition: transform 0.12s ease;
           position: relative;
+          transition: transform .1s ease, outline .1s ease;
         }
+        .lc-cell:hover { transform: scale(1.35); z-index: 30; }
 
-        /* Mobile heatmap: show only last 3 months */
-        @media (max-width: 639px) {
-          .heatmap-grid { grid-template-columns: repeat(3, 1fr); }
-          .heatmap-hide-mobile { display: none; }
-        }
-        @media (min-width: 640px) and (max-width: 1023px) {
-          .heatmap-grid { grid-template-columns: repeat(6, 1fr); }
-          .heatmap-hide-tablet { display: none; }
-        }
-
-        .tooltip-box {
+        /* Tooltip */
+        .lc-tip {
           position: absolute;
           bottom: calc(100% + 6px);
           left: 50%;
           transform: translateX(-50%);
           padding: 4px 8px;
           border-radius: 6px;
-          font-size: 10px;
-          font-weight: 700;
+          font-size: 10px; font-weight: 700;
           white-space: nowrap;
           pointer-events: none;
-          z-index: 50;
+          z-index: 60;
           background: ${isLight ? "#0f172a" : "#f8fafc"};
           color: ${isLight ? "#fff" : "#0f172a"};
+          box-shadow: 0 4px 12px rgba(0,0,0,.25);
+        }
+        .lc-tip::after {
+          content: "";
+          position: absolute;
+          top: 100%; left: 50%;
+          transform: translateX(-50%);
+          border: 4px solid transparent;
+          border-top-color: ${isLight ? "#0f172a" : "#f8fafc"};
         }
       `}</style>
 
-      <div className="dash-in w-full flex flex-col gap-4 sm:gap-6" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+      <div className="dash-root w-full flex flex-col gap-4 sm:gap-5"
+        style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
 
-        {/* ── Error banner ── */}
+        {/* ── Backend status banner ── */}
+        {backendOnline !== null && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold"
+            style={{
+              background: backendOnline ? "rgba(16,185,129,0.09)" : "rgba(239,68,68,0.09)",
+              border: `1px solid ${backendOnline ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`,
+              color: backendOnline ? "#10b981" : "#ef4444",
+            }}>
+            {backendOnline ? <Wifi size={13} /> : <WifiOff size={13} />}
+            {backendOnline
+              ? "Backend connected — all stats are live & synced to your account"
+              : "Backend offline — stats shown from local session only"}
+            {!backendOnline && (
+              <button onClick={fetchStats}
+                className="ml-auto flex items-center gap-1 underline opacity-80 hover:opacity-100">
+                <RefreshCw size={11} /> Retry
+              </button>
+            )}
+          </div>
+        )}
         {error && (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold"
-            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#ef4444" }}>
-            <AlertCircle size={16} />
-            {error}
-            <button onClick={fetchStats} className="ml-auto flex items-center gap-1 underline text-xs">
-              <RefreshCw size={12} /> Retry
-            </button>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
+            <AlertCircle size={13} />{error}
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════
-            1. TOP ROW — Greeting
-        ═══════════════════════════════════════════ */}
-        <div className="hov-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl" style={card}>
-          <div className="flex flex-col gap-1 min-w-0">
+        {/* ══════════════════════════════════════
+            1. TOP — Greeting
+        ══════════════════════════════════════ */}
+        <div className="hov-lift flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl" style={card}>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-2xl">{greetingData.icon}</span>
+              <span className="text-xl sm:text-2xl">{greeting.icon}</span>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-                {greetingData.text}, <span style={{ color: "#3b82f6" }}>{username}</span>!
+                {greeting.text}, <span style={{ color: "#3b82f6" }}>{username}</span>!
               </h1>
             </div>
-            <p className="text-xs sm:text-sm italic opacity-70 truncate">{quote}</p>
+            <p className="text-xs sm:text-sm italic opacity-60 mt-1 truncate max-w-lg">"{quote}"</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold"
-              style={{ background: isLight ? "#f1f5f9" : "#1a1a20", border: `1px solid ${isLight ? "#cbd5e1" : "#2a2a34"}` }}>
-              <CalendarIcon size={14} className="text-blue-500" />
-              <span className="hidden sm:inline">{formattedDate}</span>
-              <span className="sm:hidden">{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold"
+              style={{ background: isLight ? "#f1f5f9" : "#1c1c20", border: `1px solid ${isLight ? "#cbd5e1" : "#2a2a34"}` }}>
+              <CalendarIcon size={13} className="text-blue-500" />
+              {fmtDate}
             </div>
             <button onClick={() => navigate("/focusbreak")}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-white hover:scale-105 active:scale-95 transition-all"
-              style={{ background: "linear-gradient(135deg,#3b82f6,#2563eb)", boxShadow: "0 4px 14px rgba(59,130,246,0.35)" }}>
-              <Play size={14} fill="white" /> Focus
+              style={{ background: "linear-gradient(135deg,#3b82f6,#2563eb)", boxShadow: "0 4px 14px rgba(59,130,246,.3)" }}>
+              <Play size={13} fill="white" /> Start Focus
             </button>
           </div>
         </div>
 
-        {/* ═══════════════════════════════════════════
-            2. STATS CARDS (4 cards — real data)
-        ═══════════════════════════════════════════ */}
-        <div className="stats-grid">
-
-          {/* Focus Time */}
-          <div className="hov-card p-4 sm:p-5 rounded-2xl flex flex-col justify-between" style={card}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider opacity-60">Focus Time Today</span>
-              <div className="p-2 rounded-xl" style={{ background: "rgba(59,130,246,0.12)" }}>
-                <Clock size={16} className="text-blue-500" />
-              </div>
-            </div>
-            <div className="mt-3">
-              {loading ? <Skeleton w="80px" /> : (
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">{formattedFocusTime}</div>
-              )}
-              <div className="flex items-center gap-1 mt-1 text-xs font-semibold text-emerald-500">
-                <TrendingUp size={12} /><span>Live tracking</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Tasks Completed */}
-          <div className="hov-card p-4 sm:p-5 rounded-2xl flex flex-col justify-between" style={card}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider opacity-60">Tasks Done</span>
-              <div className="p-2 rounded-xl" style={{ background: "rgba(16,185,129,0.12)" }}>
-                <CheckCircle2 size={16} className="text-emerald-500" />
-              </div>
-            </div>
-            <div className="mt-3">
-              {loading ? <Skeleton w="70px" /> : (
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">
-                  {stats?.tasksCompleted ?? 0}
-                  <span className="text-sm font-semibold opacity-40"> / {stats?.tasksTotal ?? 0}</span>
+        {/* ══════════════════════════════════════
+            2. STATS CARDS — real data
+        ══════════════════════════════════════ */}
+        <div className="stats-g">
+          {[
+            {
+              label: "Focus Today", icon: <Clock size={15} className="text-blue-500" />, iconBg: "rgba(59,130,246,.12)",
+              value: loading ? null : fmtTime(liveFocusSecondsToday),
+              sub: <span className="text-emerald-500 flex items-center gap-1"><TrendingUp size={11}/>Live tracking</span>,
+            },
+            {
+              label: "Tasks Done", icon: <CheckCircle2 size={15} className="text-emerald-500" />, iconBg: "rgba(16,185,129,.12)",
+              value: loading ? null : `${stats?.tasksCompleted ?? 0} / ${stats?.tasksTotal ?? 0}`,
+              sub: <span className="text-emerald-500">{taskPct}% completion</span>,
+            },
+            {
+              label: "Streak", icon: <Flame size={15} className="text-orange-500" />, iconBg: "rgba(249,115,22,.12)",
+              value: loading ? null : `${stats?.currentStreak ?? 0} Days`,
+              valueColor: "#f97316",
+              sub: <span className="opacity-60">Best: {stats?.maxStreak ?? 0} days 🔥</span>,
+            },
+            {
+              label: "Daily Goal", icon: <Target size={15} className="text-purple-500" />, iconBg: "rgba(168,85,247,.12)",
+              value: loading ? null : `${dailyGoalPct}%`,
+              sub: (
+                <div>
+                  <div className="w-full h-1.5 rounded-full overflow-hidden mt-1" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
+                    <div className="h-full rounded-full" style={{ width: `${dailyGoalPct}%`, background: "linear-gradient(90deg,#a855f7,#6366f1)", transition: "width .7s ease" }} />
+                  </div>
+                  <span className="opacity-40 text-[10px]">Goal: 4h / day</span>
                 </div>
-              )}
-              <div className="text-xs font-semibold text-emerald-500 mt-1">
-                {stats?.tasksTotal ? Math.round((stats.tasksCompleted / stats.tasksTotal) * 100) : 0}% completion
+              ),
+            },
+          ].map(({ label, icon, iconBg, value, sub, valueColor }, i) => (
+            <div key={i} className="hov-lift p-4 sm:p-5 rounded-2xl flex flex-col gap-2" style={card}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider opacity-55">{label}</span>
+                <div className="p-2 rounded-xl" style={{ background: iconBg }}>{icon}</div>
               </div>
+              {loading
+                ? <SK w="70px" h={28} />
+                : <div className="text-lg sm:text-xl lg:text-2xl font-black tracking-tight" style={valueColor ? { color: valueColor } : {}}>{value}</div>
+              }
+              <div className="text-xs font-semibold">{sub}</div>
             </div>
-          </div>
-
-          {/* Streak */}
-          <div className="hov-card p-4 sm:p-5 rounded-2xl flex flex-col justify-between" style={card}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider opacity-60">Current Streak</span>
-              <div className="p-2 rounded-xl" style={{ background: "rgba(249,115,22,0.12)" }}>
-                <Flame size={16} className="text-orange-500" />
-              </div>
-            </div>
-            <div className="mt-3">
-              {loading ? <Skeleton w="60px" /> : (
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-orange-500">
-                  {stats?.currentStreak ?? 0}
-                  <span className="text-sm font-semibold text-orange-400"> Days</span>
-                </div>
-              )}
-              <div className="text-xs font-semibold opacity-60 mt-1">
-                Best: {stats?.maxStreak ?? 0} days 🔥
-              </div>
-            </div>
-          </div>
-
-          {/* Daily Goal */}
-          <div className="hov-card p-4 sm:p-5 rounded-2xl flex flex-col justify-between" style={card}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider opacity-60">Daily Goal</span>
-              <div className="p-2 rounded-xl" style={{ background: "rgba(168,85,247,0.12)" }}>
-                <Target size={16} className="text-purple-500" />
-              </div>
-            </div>
-            <div className="mt-3">
-              {loading ? <Skeleton w="70px" /> : (
-                <div className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight">{dailyGoalPercent}%</div>
-              )}
-              <div className="w-full h-1.5 rounded-full mt-2 overflow-hidden" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
-                <div className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${dailyGoalPercent}%`, background: "linear-gradient(90deg,#a855f7,#6366f1)" }} />
-              </div>
-              <div className="text-[10px] opacity-50 mt-1 font-semibold">Goal: 4 hours/day</div>
-            </div>
-          </div>
-
+          ))}
         </div>
 
-        {/* ═══════════════════════════════════════════
-            3. FOCUSFLOW ACTIVITY HEATMAP (fixed size)
-        ═══════════════════════════════════════════ */}
-        <div className="hov-card p-4 sm:p-6 rounded-2xl flex flex-col gap-4" style={card}>
+        {/* ══════════════════════════════════════
+            3. LEETCODE-STYLE ACTIVITY HEATMAP
+        ══════════════════════════════════════ */}
+        <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-4" style={card}>
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-sm sm:text-base font-extrabold flex items-center gap-2">
-                <Activity size={16} className="text-emerald-500" />
+                <Activity size={15} className="text-emerald-500" />
                 FocusFlow Activity
+                <span className="text-[10px] font-semibold opacity-50 normal-case">last 52 weeks</span>
               </h3>
-              <p className="text-[11px] font-semibold opacity-60 mt-0.5">
-                {loading ? "Loading..." : `${stats?.totalActiveDays ?? 0} active days • ${stats?.totalHoursYear ?? 0}h total`}
+              <p className="text-[11px] font-semibold opacity-55 mt-0.5">
+                {loading
+                  ? "Loading your activity..."
+                  : `${stats?.totalActiveDays ?? 0} active days in the last year • ${stats?.totalHoursYear ?? 0} hrs total`
+                }
               </p>
             </div>
             {/* Legend */}
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold opacity-70 flex-shrink-0">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold opacity-65 flex-shrink-0">
               <span>Less</span>
               {[0,1,2,3,4].map(l => (
-                <div key={l} style={{ width: 10, height: 10, borderRadius: 2, background: tileColor(l), flexShrink: 0 }} />
+                <div key={l} title={["No activity","≤1.5h","≤3h","≤5h","5h+"][l]}
+                  style={{ width:11, height:11, borderRadius:2, background:tileColor(l,false), flexShrink:0 }} />
               ))}
               <span>More</span>
             </div>
           </div>
 
-          {/* 12-month fixed grid */}
-          <div className="heatmap-grid w-full">
-            {heatmapMonths.map((month, mIdx) => {
-              // On mobile show last 3 months, on tablet last 6
-              const hideOnMobile = mIdx < 9;
-              const hideOnTablet = mIdx < 6;
-              return (
-                <div
-                  key={mIdx}
-                  className={`heatmap-month ${hideOnMobile ? "heatmap-hide-mobile" : ""} ${!hideOnMobile && hideOnTablet ? "heatmap-hide-tablet" : ""}`}
-                >
-                  {/* Week columns */}
-                  <div className="heatmap-weeks w-full">
-                    {month.weeks.map((week, wIdx) => (
-                      <div key={wIdx} className="heatmap-col flex-1">
-                        {week.map((cell) => {
-                          if (!cell.isValid) {
-                            return <div key={cell.id} style={{ aspectRatio: 1, opacity: 0, minWidth: 3 }} />;
-                          }
-                          const isHov = hoveredCell === cell.id;
-                          return (
-                            <div
-                              key={cell.id}
-                              className="heatmap-cell hov-tile"
-                              style={{
-                                background: tileColor(cell.level),
-                                opacity: cell.isFuture ? 0.15 : 1,
-                                outline: cell.isToday ? "2px solid #10b981" : "none",
-                                outlineOffset: 1,
-                              }}
-                              onMouseEnter={() => !cell.isFuture && setHoveredCell(cell.id)}
-                              onMouseLeave={() => setHoveredCell(null)}
-                            >
-                              {isHov && (
-                                <div className="tooltip-box">
-                                  {cell.dateStr}: <span style={{ color: "#10b981" }}>{cell.hours}h</span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+          {/* ── The actual LeetCode grid ── */}
+          <div className="lc-wrap">
+            <div className="lc-inner">
+              {/* Month labels row */}
+              <div className="lc-months">
+                {heatmapData.weeks.map((week, wi) => (
+                  <div key={wi} style={{ width: 11, flexShrink: 0 }}>
+                    {heatmapData.monthLabels[wi] && (
+                      <span className="lc-mlabel">{heatmapData.monthLabels[wi]}</span>
+                    )}
                   </div>
-                  {/* Month label */}
-                  <span className="text-[9px] sm:text-[10px] font-bold opacity-55 mt-1">{month.monthName}</span>
+                ))}
+              </div>
+
+              {/* Day labels + grid */}
+              <div className="lc-body">
+                {/* Day-of-week labels (Sun Mon … Sat) */}
+                <div className="lc-dow">
+                  {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d, i) => (
+                    <div key={d} className="lc-dow-label"
+                      style={{ visibility: i % 2 === 1 ? "visible" : "hidden" }}>
+                      {d}
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
+
+                {/* Grid — 52 columns × 7 rows, auto-flow column */}
+                <div className="lc-grid">
+                  {heatmapData.weeks.map((week) =>
+                    week.map((day) => {
+                      const isHov = hoveredCell === day.key;
+                      return (
+                        <div
+                          key={day.key}
+                          className="lc-cell"
+                          style={{
+                            background: tileColor(day.level, day.isFuture),
+                            outline: day.isToday ? "2px solid #10b981" : "none",
+                            outlineOffset: "1px",
+                            opacity: day.isFuture ? 0 : 1,
+                          }}
+                          onMouseEnter={() => !day.isFuture && setHoveredCell(day.key)}
+                          onMouseLeave={() => setHoveredCell(null)}
+                        >
+                          {isHov && (
+                            <div className="lc-tip">
+                              {day.dateStr} —{" "}
+                              {day.seconds > 0
+                                ? <span style={{ color: "#2cbb5d" }}>{fmtTime(day.seconds)} focused</span>
+                                : <span style={{ opacity: 0.6 }}>No activity</span>
+                              }
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Bottom stats bar */}
-          <div className="flex flex-wrap items-center justify-between pt-3 border-t text-xs font-semibold gap-y-1"
-            style={{ borderColor: isLight ? "#e2e8f0" : "#27272a", opacity: 0.85 }}>
-            <div className="flex flex-wrap gap-4">
-              <span>🔥 Streak: <strong className="text-orange-500">{stats?.currentStreak ?? 0} Days</strong></span>
-              <span>⚡ Active Days: <strong className="text-emerald-500">{stats?.totalActiveDays ?? 0}</strong></span>
-            </div>
-            <span className="text-[10px] opacity-50">Only real focus activity is shown</span>
+          {/* Bottom stats row — LeetCode style */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 pt-3 border-t text-xs font-bold"
+            style={{ borderColor: isLight ? "#e2e8f0" : "#27272a" }}>
+            <span>🔥 Current Streak: <strong className="text-orange-500">{stats?.currentStreak ?? 0} Days</strong></span>
+            <span>🏆 Max Streak: <strong className="text-yellow-500">{stats?.maxStreak ?? 0} Days</strong></span>
+            <span>⚡ Active Days: <strong className="text-emerald-500">{stats?.totalActiveDays ?? 0}</strong></span>
+            <span className="ml-auto text-[10px] font-semibold opacity-40">
+              {backendOnline ? "Synced with your account" : "Local session only"}
+            </span>
           </div>
         </div>
 
-        {/* ═══════════════════════════════════════════
-            4. MID: Weekly Chart + Task Progress
-        ═══════════════════════════════════════════ */}
-        <div className="mid-grid">
-
-          {/* Weekly Focus Bar Chart */}
-          <div className="hov-card p-4 sm:p-6 rounded-2xl flex flex-col" style={card}>
+        {/* ══════════════════════════════════════
+            4. MID — Weekly Chart + Task Ring
+        ══════════════════════════════════════ */}
+        <div className="mid-g">
+          {/* Weekly bar chart */}
+          <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col" style={card}>
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <BarChart3 size={16} className="text-blue-500" />
+                <BarChart3 size={15} className="text-blue-500" />
                 Weekly Focus
               </h3>
-              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: isLight ? "#f1f5f9" : "#1a1a20" }}>
-                {["thisWeek","lastWeek"].map(tab => (
-                  <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${activeTab === tab ? "bg-blue-600 text-white" : "opacity-60"}`}>
-                    {tab === "thisWeek" ? "This Week" : "Last Week"}
+              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: isLight ? "#f1f5f9" : "#1c1c20" }}>
+                {["thisWeek","lastWeek"].map(t => (
+                  <button key={t} onClick={() => setActiveTab(t)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${activeTab === t ? "bg-blue-600 text-white" : "opacity-50 hover:opacity-80"}`}>
+                    {t === "thisWeek" ? "This Week" : "Last Week"}
                   </button>
                 ))}
               </div>
             </div>
-
-            <div className="flex items-end gap-1.5 sm:gap-2 h-36 sm:h-44 pt-4">
-              {(loading ? Array(7).fill({ day: "—", hours: 0, dateStr: "" }) : weeklyChartData).map((item, i) => {
-                const pct = Math.max(8, Math.round((item.hours / maxHours) * 100));
-                const isHov = hoveredDay === i;
+            <div className="flex items-end gap-1.5 sm:gap-2 h-36 sm:h-44 pt-4 relative">
+              {weeklyChartData.map((item, i) => {
+                const pct = Math.max(6, Math.round((item.hours / maxHours) * 100));
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end relative"
                     onMouseEnter={() => setHoveredDay(i)} onMouseLeave={() => setHoveredDay(null)}>
-                    {isHov && !loading && (
-                      <div className="absolute bottom-full mb-2 px-2 py-1 rounded-lg text-[11px] font-bold shadow-lg z-20 whitespace-nowrap"
+                    {hoveredDay === i && !loading && (
+                      <div className="absolute bottom-full mb-2 px-2 py-1 rounded-lg text-[11px] font-bold shadow-lg z-20 whitespace-nowrap pointer-events-none"
                         style={{ background: isLight ? "#0f172a" : "#f8fafc", color: isLight ? "#fff" : "#0f172a" }}>
-                        {item.dateStr}: <span className="text-blue-500">{item.hours}h</span>
+                        {item.dateStr}: <span className="text-blue-400">{item.hours}h</span>
                       </div>
                     )}
-                    <div className="w-full rounded-t-lg transition-all duration-500 relative overflow-hidden"
+                    <div className="w-full rounded-t-lg transition-all duration-500"
                       style={{
                         height: `${pct}%`,
-                        background: loading ? (isLight ? "#e2e8f0" : "#27272a") :
-                          (item.isToday ? "linear-gradient(180deg,#3b82f6,#1d4ed8)" : (isLight ? "#e2e8f0" : "#27272a")),
-                        boxShadow: item.isToday ? "0 4px 14px rgba(59,130,246,0.3)" : "none",
-                        animation: loading ? "pulse 1.5s ease infinite" : "none",
+                        background: loading
+                          ? (isLight ? "#e2e8f0" : "#27272a")
+                          : (item.isToday
+                            ? "linear-gradient(180deg,#3b82f6,#1d4ed8)"
+                            : (isLight ? "#e2e8f0" : "#27272a")),
+                        boxShadow: item.isToday ? "0 4px 14px rgba(59,130,246,.3)" : "none",
+                        animation: loading ? "skpulse 1.5s ease infinite" : "none",
                       }} />
-                    <span className={`text-[10px] sm:text-xs font-bold ${item.isToday ? "text-blue-500" : "opacity-50"}`}>{item.day}</span>
+                    <span className={`text-[10px] sm:text-xs font-bold ${item.isToday ? "text-blue-500" : "opacity-45"}`}>{item.day}</span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Task Progress Ring */}
-          <div className="hov-card p-4 sm:p-6 rounded-2xl flex flex-col" style={card}>
-            <div className="flex items-center justify-between mb-2">
+          {/* Task ring */}
+          <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
+            <div className="flex items-center justify-between">
               <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <CheckSquare size={16} className="text-emerald-500" />
-                Tasks
+                <CheckSquare size={15} className="text-emerald-500" />Tasks
               </h3>
               <button onClick={() => navigate("/")} className="text-xs font-bold text-blue-500 flex items-center gap-0.5">
                 All <ChevronRight size={13} />
               </button>
             </div>
-
-            <div className="flex items-center justify-center flex-1 my-2">
-              {loading ? (
-                <div style={{ width: 110, height: 110, borderRadius: "50%", background: isLight ? "#e2e8f0" : "#27272a", animation: "pulse 1.5s ease infinite" }} />
-              ) : (
-                <div className="relative">
-                  <svg width="110" height="110" className="-rotate-90">
-                    <circle cx="55" cy="55" r="44" stroke={isLight ? "#e2e8f0" : "#27272a"} strokeWidth="8" fill="none" />
-                    <circle cx="55" cy="55" r="44" stroke="#10b981" strokeWidth="8"
-                      strokeDasharray={276.5}
-                      strokeDashoffset={276.5 * (1 - (stats?.tasksTotal ? (stats.tasksCompleted / stats.tasksTotal) : 0))}
-                      strokeLinecap="round" fill="none"
-                      style={{ transition: "stroke-dashoffset 0.8s ease" }} />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-black">
-                      {stats?.tasksTotal ? Math.round((stats.tasksCompleted / stats.tasksTotal) * 100) : 0}%
-                    </span>
-                    <span className="text-[9px] font-bold uppercase opacity-50">Done</span>
+            <div className="flex items-center justify-center flex-1 py-2">
+              {loading
+                ? <div style={{ width:110,height:110,borderRadius:"50%",background:isLight?"#e2e8f0":"#27272a",animation:"skpulse 1.5s ease infinite"}} />
+                : (
+                  <div className="relative">
+                    <svg width="110" height="110" className="-rotate-90">
+                      <circle cx="55" cy="55" r="44" stroke={isLight?"#e2e8f0":"#27272a"} strokeWidth="8" fill="none"/>
+                      <circle cx="55" cy="55" r="44" stroke="#10b981" strokeWidth="8"
+                        strokeDasharray={276.5}
+                        strokeDashoffset={276.5 * (1 - taskPct / 100)}
+                        strokeLinecap="round" fill="none"
+                        style={{ transition: "stroke-dashoffset .8s ease" }}/>
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-xl font-black">{taskPct}%</span>
+                      <span className="text-[9px] uppercase font-bold opacity-50">Done</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              }
             </div>
-
-            <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-3 gap-1.5 text-center">
               {[
-                { label: "Pending", val: stats?.tasksPending ?? 0, color: "#f59e0b" },
-                { label: "Done", val: stats?.tasksCompleted ?? 0, color: "#10b981" },
-                { label: "Total", val: stats?.tasksTotal ?? 0, color: "#3b82f6" },
-              ].map(({ label, val, color }) => (
-                <div key={label} className="p-2 rounded-xl" style={{ background: isLight ? "#f8fafc" : "#18181c" }}>
-                  <span className="block text-xs font-bold" style={{ color }}>{loading ? "—" : val}</span>
-                  <span className="text-[9px] font-semibold opacity-55">{label}</span>
+                { l: "Pending", v: stats?.tasksPending ?? 0, c: "#f59e0b" },
+                { l: "Done",    v: stats?.tasksCompleted ?? 0, c: "#10b981" },
+                { l: "Total",   v: stats?.tasksTotal ?? 0,  c: "#3b82f6" },
+              ].map(({ l, v, c }) => (
+                <div key={l} className="p-2 rounded-xl" style={{ background: isLight ? "#f8fafc" : "#19191d" }}>
+                  <span className="block text-xs font-black" style={{ color: c }}>{loading ? "—" : v}</span>
+                  <span className="text-[9px] font-semibold opacity-50">{l}</span>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
 
-        {/* ═══════════════════════════════════════════
-            5. BOTTOM: Schedule + Subject Analytics + Achievements
-        ═══════════════════════════════════════════ */}
-        <div className="bot-grid">
-
-          {/* Upcoming Schedule */}
-          <div className="hov-card p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
+        {/* ══════════════════════════════════════
+            5. BOTTOM — Schedule + Analytics + Achievements
+        ══════════════════════════════════════ */}
+        <div className="bot-g">
+          {/* Schedule */}
+          <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
             <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-              <ListTodo size={16} className="text-blue-500" />
-              Upcoming
+              <ListTodo size={15} className="text-blue-500" />Upcoming
             </h3>
             {[
-              { title: "Review State Management PR", time: "2:30 PM", priority: "High" },
-              { title: "Solve 2 LeetCode Problems", time: "5:00 PM", priority: "Med" },
-              { title: "DBMS Indexing Video", time: "7:30 PM", priority: "Normal" },
-              { title: "Weekly Retrospective", time: "Tomorrow, 10 AM", priority: "High" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl"
-                style={{ background: isLight ? "#f8fafc" : "#18181c", border: `1px solid ${isLight ? "#f1f5f9" : "#22222a"}` }}>
+              { title:"Review State Management PR",  time:"2:30 PM",      pri:"High" },
+              { title:"Solve 2 LeetCode Problems",   time:"5:00 PM",      pri:"Med"  },
+              { title:"DBMS Indexing Video",         time:"7:30 PM",      pri:"Normal"},
+              { title:"Weekly Retrospective",        time:"Tomorrow 10AM",pri:"High" },
+            ].map((item,i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl gap-2"
+                style={{ background: isLight?"#f8fafc":"#19191d", border:`1px solid ${isLight?"#f1f5f9":"#222228"}` }}>
                 <div className="min-w-0">
                   <p className="text-xs font-bold truncate">{item.title}</p>
-                  <p className="text-[10px] opacity-55 font-semibold">{item.time}</p>
+                  <p className="text-[10px] opacity-50 font-semibold">{item.time}</p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 ml-2"
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0"
                   style={{
-                    background: item.priority === "High" ? "rgba(239,68,68,0.12)" : "rgba(59,130,246,0.12)",
-                    color: item.priority === "High" ? "#ef4444" : "#3b82f6",
-                  }}>
-                  {item.priority}
-                </span>
+                    background: item.pri==="High"?"rgba(239,68,68,.12)":"rgba(59,130,246,.12)",
+                    color: item.pri==="High"?"#ef4444":"#3b82f6",
+                  }}>{item.pri}</span>
               </div>
             ))}
           </div>
 
-          {/* Subject Analytics */}
-          <div className="hov-card p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
+          {/* Subject analytics */}
+          <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-4" style={card}>
             <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-              <BookOpen size={16} className="text-purple-500" />
-              Subject Analytics
+              <BookOpen size={15} className="text-purple-500" />Subject Analytics
             </h3>
-            <div className="flex flex-col gap-3.5 flex-1 justify-center">
-              {categories.map((cat, i) => (
+            <div className="flex flex-col gap-3.5">
+              {categories.map((c,i) => (
                 <div key={i} className="flex flex-col gap-1">
                   <div className="flex justify-between text-xs font-bold">
-                    <span className="flex items-center gap-1 truncate">{cat.icon} {cat.name}</span>
-                    <span className="opacity-60 flex-shrink-0 ml-1">{cat.percent}%</span>
+                    <span className="flex items-center gap-1.5">{c.icon}{c.name}</span>
+                    <span className="opacity-55">{c.percent}%</span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
+                  <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isLight?"#e2e8f0":"#27272a" }}>
                     <div className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${cat.percent}%`, background: cat.color }} />
+                      style={{ width:`${c.percent}%`, background:c.color }} />
                   </div>
                 </div>
               ))}
@@ -663,38 +673,36 @@ export default function Dashboard() {
           </div>
 
           {/* Achievements */}
-          <div className="hov-card p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
+          <div className="hov-lift p-4 sm:p-6 rounded-2xl flex flex-col gap-3" style={card}>
             <div className="flex items-center justify-between">
               <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                <Trophy size={16} className="text-yellow-500" />
-                Achievements
+                <Trophy size={15} className="text-yellow-500" />Achievements
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "rgba(234,179,8,0.12)", color: "#eab308" }}>Level 5</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                style={{ background:"rgba(234,179,8,.12)", color:"#eab308" }}>Level 5</span>
             </div>
-
-            {/* XP bar */}
-            <div className="p-3 rounded-xl" style={{ background: isLight ? "#f8fafc" : "#18181c" }}>
-              <div className="flex justify-between text-xs font-bold mb-1">
+            {/* XP */}
+            <div className="p-3 rounded-xl" style={{ background:isLight?"#f8fafc":"#19191d" }}>
+              <div className="flex justify-between text-xs font-bold mb-1.5">
                 <span>Deep Work Master</span>
                 <span className="text-yellow-500">2,450 / 3,000 XP</span>
               </div>
-              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
-                <div className="h-full rounded-full" style={{ width: "81%", background: "linear-gradient(90deg,#f59e0b,#eab308)" }} />
+              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background:isLight?"#e2e8f0":"#27272a" }}>
+                <div style={{ width:"81%",height:"100%",borderRadius:99,background:"linear-gradient(90deg,#f59e0b,#eab308)" }} />
               </div>
             </div>
-
             {/* Badges */}
             <div className="grid grid-cols-2 gap-2">
-              {badges.map((b, i) => (
-                <div key={i} className={`flex items-center gap-2 p-2.5 rounded-xl border ${b.unlocked ? "" : "opacity-35 grayscale"}`}
-                  style={{ background: isLight ? "#fff" : "#18181c", borderColor: isLight ? "#f1f5f9" : "#27272a" }}>
+              {badges.map((b,i) => (
+                <div key={i}
+                  className={`flex items-center gap-2 p-2.5 rounded-xl border ${b.unlocked?"":"opacity-35 grayscale"}`}
+                  style={{ background:isLight?"#fff":"#19191d", borderColor:isLight?"#f1f5f9":"#27272a" }}>
                   <span className="text-base flex-shrink-0">{b.icon}</span>
-                  <span className="text-[10px] font-bold truncate leading-tight">{b.title}</span>
+                  <span className="text-[10px] font-bold leading-tight truncate">{b.title}</span>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
 
       </div>
