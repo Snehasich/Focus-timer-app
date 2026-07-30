@@ -3,9 +3,10 @@ import { RotateCcw, Play, Pause } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useTimer } from "../../context/TimerContext";
 
+// ── All dimensions kept in SVG units (viewBox). Container uses clamp CSS.
 const RADIUS = 118;
 const STROKE = 8;
-const SIZE = 290;
+const SIZE = 290; // viewBox reference size
 const CENTER = SIZE / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
@@ -105,9 +106,17 @@ const BreakTimer = () => {
         className={mounted ? "break-timer-mount" : ""}
         style={{ display:"flex", flexDirection:"column", alignItems:"center", gap: 16, opacity: mounted ? undefined : 0 }}
       >
-        {/* ── SVG Ring ── */}
-        <div style={{ position:"relative", width: SIZE, height: SIZE }}>
-          <svg width={SIZE} height={SIZE} style={{ overflow:"visible" }}>
+        {/* ── SVG Ring — responsive via viewBox ── */}
+        <div style={{
+          position: "relative",
+          width: "clamp(200px, 40vmin, 290px)",
+          height: "clamp(200px, 40vmin, 290px)",
+        }}>
+          <svg
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
+            width="100%" height="100%"
+            style={{ overflow: "visible", display: "block" }}
+          >
             <defs>
               <linearGradient id="breakGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%"   stopColor="#10b981" />

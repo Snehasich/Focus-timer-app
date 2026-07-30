@@ -88,22 +88,17 @@ const FocusBreakWrapper = () => {
   const { theme } = useTheme();
   const isLight = theme === "light";
   return (
-    <div className="h-screen p-3 sm:p-6 box-border flex flex-col">
-      <div 
-        className="rounded-3xl p-4 sm:p-6 flex items-center justify-center flex-1 w-full"
+    <div className="w-full min-h-screen overflow-y-auto flex items-center justify-center p-4 sm:p-6 box-border">
+      <div
+        className="w-full rounded-3xl flex items-center justify-center"
         style={{
           background: isLight ? "#ffffff" : "#111",
           border: isLight ? "1px solid #e5e7eb" : "1px solid #222",
-        borderRadius: 24,
-        padding: "24px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flex: 1,
-        boxShadow: isLight ? "0 8px 24px rgba(15,23,42,0.03)" : "0 10px 40px rgba(0,0,0,0.4)",
-        width: "100%",
-        transition: "background 0.2s, border-color 0.2s, box-shadow 0.2s",
-      }}>
+          borderRadius: 24,
+          padding: "clamp(16px, 4vw, 40px)",
+          boxShadow: isLight ? "0 8px 24px rgba(15,23,42,0.03)" : "0 10px 40px rgba(0,0,0,0.4)",
+          transition: "background 0.2s, border-color 0.2s, box-shadow 0.2s",
+        }}>
         <FocusBreak />
       </div>
     </div>
