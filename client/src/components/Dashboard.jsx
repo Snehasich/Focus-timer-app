@@ -260,7 +260,7 @@ export default function Dashboard() {
         /* 12 month blocks row */
         .hm-months-row {
           display: flex;
-          gap: 6px;
+          gap: 8px;
           min-width: max-content;
           align-items: flex-end;
           padding: 4px 0;
@@ -279,27 +279,27 @@ export default function Dashboard() {
         .hm-weeks {
           display: flex;
           flex-direction: row;
-          gap: 2px;
+          gap: 3px;
           align-items: flex-start;
         }
         .hm-week-col {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 3px;
         }
 
         /* Individual day cell */
         .hm-cell {
-          width: 10px;
-          height: 10px;
-          border-radius: 2px;
+          width: 13px;
+          height: 13px;
+          border-radius: 3px;
           cursor: pointer;
           position: relative;
-          transition: transform 0.1s ease;
+          transition: transform 0.12s ease;
           flex-shrink: 0;
         }
-        .hm-cell:hover { transform: scale(1.4); z-index: 30; }
-        .hm-cell-empty { width: 10px; height: 10px; flex-shrink: 0; opacity: 0; }
+        .hm-cell:hover { transform: scale(1.45); z-index: 30; }
+        .hm-cell-empty { width: 13px; height: 13px; flex-shrink: 0; opacity: 0; }
 
         /* Month label at bottom */
         .hm-month-label {
@@ -462,7 +462,7 @@ export default function Dashboard() {
               <h3 className="text-sm sm:text-base font-extrabold flex items-center gap-2">
                 <Activity size={15} className="text-emerald-500" />
                 FocusFlow Activity
-                <span className="text-[10px] font-semibold opacity-50 normal-case">last 52 weeks</span>
+                <span className="text-[10px] font-semibold opacity-50 normal-case">last 12 months</span>
               </h3>
               <p className="text-[11px] font-semibold opacity-55 mt-0.5">
                 {loading
