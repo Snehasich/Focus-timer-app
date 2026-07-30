@@ -20,27 +20,28 @@ public class TaskController {
         this.service = service;
     }
 
+    private String getUsername(Authentication authentication) {
+        if (authentication != null && authentication.getName() != null && !authentication.getName().equals("anonymousUser")) {
+            return authentication.getName();
+        }
+        return "Guest";
+    }
+
     // 🔐 GET USER-SPECIFIC TASKS
     @GetMapping
     public ResponseEntity<List<Task>> getTasks(Authentication authentication) {
-
-        String username = authentication.getName();
-
+        String username = getUsername(authentication);
         List<Task> tasks = service.getTasksByUser(username);
-
         return ResponseEntity.ok(tasks);
     }
 
-    // ➕ CREATE TASK (assign to logged-in user)
+    // ➕ CREATE TASK (assign to logged-in user or Guest)
     @PostMapping
     public ResponseEntity<Task> addTask(@RequestBody Task task, Authentication authentication) {
-
-        String username = authentication.getName();
-
+        String username = getUsername(authentication);
         task.setUsername(username); // 🔐 assign owner
 
         Task savedTask = service.createTasks(task);
-
         return ResponseEntity.ok(savedTask);
     }
 
@@ -49,11 +50,8 @@ public class TaskController {
     public ResponseEntity<Task> updateTask(@PathVariable Long id,
                                            @RequestBody Task task,
                                            Authentication authentication) {
-
-        String username = authentication.getName();
-
+        String username = getUsername(authentication);
         Task updated = service.updateTaskForUser(id, task, username);
-
         return ResponseEntity.ok(updated);
     }
 
@@ -61,11 +59,8 @@ public class TaskController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id,
                                            Authentication authentication) {
-
-        String username = authentication.getName();
-
+        String username = getUsername(authentication);
         service.deleteTaskForUser(id, username);
-
         return ResponseEntity.ok().build();
     }
 }
