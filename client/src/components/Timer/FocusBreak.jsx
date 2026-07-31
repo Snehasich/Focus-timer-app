@@ -3,12 +3,15 @@ import FocusTimer from './FocusTimer';
 import BreakTimer from './BreakTimer';
 import { useTheme } from '../../context/ThemeContext';
 import { useTimer } from '../../context/TimerContext';
+import { Settings, X, Check, Clock, Coffee } from 'lucide-react';
 
 const FocusBreak = () => {
   const [mode, setMode] = useState('focus');
   const [animating, setAnimating] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingMode, setPendingMode] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+
   const { theme } = useTheme();
   const { 
     isFocusRunning, 
@@ -18,10 +21,15 @@ const FocusBreak = () => {
     setIsBreakRunning, 
     setBreakStartedAt,
     focusInitialTime,
+    setFocusInitialTime,
     setFocusTime,
     breakInitialTime,
+    setBreakInitialTime,
     setBreakTime
   } = useTimer();
+
+  const [customFocusMins, setCustomFocusMins] = useState(Math.round(focusInitialTime / 60));
+  const [customBreakMins, setCustomBreakMins] = useState(Math.round(breakInitialTime / 60));
 
   const switchMode = (next) => {
     if (next === mode) return;
@@ -67,6 +75,18 @@ const FocusBreak = () => {
     setPendingMode(null);
   };
 
+  const handleApplyFocusMins = (mins) => {
+    const valid = Math.max(1, Math.min(180, parseInt(mins, 10) || 25));
+    setFocusInitialTime(valid * 60);
+    setCustomFocusMins(valid);
+  };
+
+  const handleApplyBreakMins = (mins) => {
+    const valid = Math.max(1, Math.min(120, parseInt(mins, 10) || 10));
+    setBreakInitialTime(valid * 60);
+    setCustomBreakMins(valid);
+  };
+
   const isLight = theme === "light";
 
   return (
@@ -107,9 +127,39 @@ const FocusBreak = () => {
         .modal-btn:active {
           transform: scale(0.96);
         }
+        .settings-preset-btn {
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          border: 1px solid transparent;
+        }
+        .settings-preset-btn:hover { transform: translateY(-1px); }
       `}</style>
 
-      <div style={{ color: isLight ? "#111827" : "white", width: "100%", maxWidth: "clamp(280px, 90vw, 460px)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ color: isLight ? "#111827" : "white", width: "100%", maxWidth: "clamp(280px, 90vw, 460px)", display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
+
+        {/* ── Top-Right Settings Icon Button ── */}
+        <button
+          onClick={() => {
+            setCustomFocusMins(Math.round(focusInitialTime / 60));
+            setCustomBreakMins(Math.round(breakInitialTime / 60));
+            setShowSettings(true);
+          }}
+          className="absolute top-0 right-0 p-2 rounded-full transition-all hover:scale-110 active:scale-95"
+          style={{
+            background: isLight ? "#f1f5f9" : "#1a1a20",
+            border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a34",
+            color: isLight ? "#475569" : "#9ca3af",
+            cursor: "pointer",
+            zIndex: 10,
+          }}
+          title="Timer Duration Settings"
+        >
+          <Settings size={17} />
+        </button>
 
         {/* ── Pill Tab Switcher ── */}
         <div style={{
@@ -257,6 +307,175 @@ const FocusBreak = () => {
                   Yes, Switch
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Timer Settings Modal ── */}
+        {showSettings && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.55)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            animation: "timerFadeIn 0.2s ease forwards",
+          }}>
+            <div style={{
+              background: isLight ? "#ffffff" : "#16161a",
+              border: isLight ? "1px solid #e5e7eb" : "1px solid #282832",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              borderRadius: 24,
+              padding: 24,
+              width: "90%",
+              maxWidth: 420,
+              display: "flex",
+              flexDirection: "column",
+              gap: 20,
+              animation: "timerFadeIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+            }}>
+              {/* Header */}
+              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: isLight ? "#e2e8f0" : "#26262e" }}>
+                <div className="flex items-center gap-2">
+                  <Settings size={18} className="text-blue-500" />
+                  <h3 className="m-0 font-extrabold text-lg" style={{ color: isLight ? "#0f172a" : "#ffffff" }}>
+                    Timer Duration Settings
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-1 rounded-lg transition-all hover:bg-black/10"
+                  style={{ color: isLight ? "#64748b" : "#94a3b8" }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* 1. FOCUS TIMER SETTINGS */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between text-xs font-bold" style={{ color: "#3b82f6" }}>
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={14} />
+                    <span>Focus Duration</span>
+                  </div>
+                  <span>{Math.round(focusInitialTime / 60)} Minutes</span>
+                </div>
+
+                {/* Focus Presets */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[15, 25, 30, 45, 50, 60].map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => handleApplyFocusMins(m)}
+                      className="settings-preset-btn"
+                      style={{
+                        background: Math.round(focusInitialTime / 60) === m ? "#3b82f6" : (isLight ? "#f1f5f9" : "#222228"),
+                        color: Math.round(focusInitialTime / 60) === m ? "#ffffff" : (isLight ? "#475569" : "#94a3b8"),
+                        borderColor: Math.round(focusInitialTime / 60) === m ? "#2563eb" : (isLight ? "#cbd5e1" : "#2e2e38"),
+                      }}
+                    >
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+
+                {/* Focus Custom Input */}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-semibold" style={{ color: isLight ? "#64748b" : "#94a3b8" }}>Custom:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={customFocusMins}
+                    onChange={(e) => setCustomFocusMins(e.target.value)}
+                    placeholder="Mins"
+                    className="w-20 px-2.5 py-1 rounded-xl text-xs font-bold outline-none border text-center"
+                    style={{
+                      background: isLight ? "#f8fafc" : "#111114",
+                      borderColor: isLight ? "#cbd5e1" : "#33333d",
+                      color: isLight ? "#0f172a" : "#ffffff",
+                    }}
+                  />
+                  <button
+                    onClick={() => handleApplyFocusMins(customFocusMins)}
+                    className="px-3 py-1 rounded-xl text-xs font-bold text-white flex items-center gap-1 hover:scale-105"
+                    style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)" }}
+                  >
+                    <Check size={12} /> Apply
+                  </button>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: isLight ? "#e2e8f0" : "#26262e" }} />
+
+              {/* 2. BREAK TIMER SETTINGS */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between text-xs font-bold" style={{ color: "#10b981" }}>
+                  <div className="flex items-center gap-1.5">
+                    <Coffee size={14} />
+                    <span>Break Duration</span>
+                  </div>
+                  <span>{Math.round(breakInitialTime / 60)} Minutes</span>
+                </div>
+
+                {/* Break Presets */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[5, 10, 15, 20, 30].map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => handleApplyBreakMins(m)}
+                      className="settings-preset-btn"
+                      style={{
+                        background: Math.round(breakInitialTime / 60) === m ? "#10b981" : (isLight ? "#f1f5f9" : "#222228"),
+                        color: Math.round(breakInitialTime / 60) === m ? "#ffffff" : (isLight ? "#475569" : "#94a3b8"),
+                        borderColor: Math.round(breakInitialTime / 60) === m ? "#059669" : (isLight ? "#cbd5e1" : "#2e2e38"),
+                      }}
+                    >
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+
+                {/* Break Custom Input */}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-semibold" style={{ color: isLight ? "#64748b" : "#94a3b8" }}>Custom:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={customBreakMins}
+                    onChange={(e) => setCustomBreakMins(e.target.value)}
+                    placeholder="Mins"
+                    className="w-20 px-2.5 py-1 rounded-xl text-xs font-bold outline-none border text-center"
+                    style={{
+                      background: isLight ? "#f8fafc" : "#111114",
+                      borderColor: isLight ? "#cbd5e1" : "#33333d",
+                      color: isLight ? "#0f172a" : "#ffffff",
+                    }}
+                  />
+                  <button
+                    onClick={() => handleApplyBreakMins(customBreakMins)}
+                    className="px-3 py-1 rounded-xl text-xs font-bold text-white flex items-center gap-1 hover:scale-105"
+                    style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                  >
+                    <Check size={12} /> Apply
+                  </button>
+                </div>
+              </div>
+
+              {/* Done / Close Button */}
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-full py-2.5 rounded-xl font-bold text-xs text-white mt-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 4px 14px rgba(59,130,246,0.3)" }}
+              >
+                Done
+              </button>
             </div>
           </div>
         )}
