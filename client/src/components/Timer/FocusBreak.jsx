@@ -491,14 +491,14 @@ const FocusBreak = () => {
                   onClick={handleResetSettings}
                   className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   style={{
-                    background: isLight ? "#fee2e2" : "rgba(239,68,68,0.1)",
-                    color: "#ef4444",
-                    border: isLight ? "1px solid #fca5a5" : "1px solid rgba(239,68,68,0.25)",
+                    background: isLight ? "#f1f5f9" : "#1e1e24",
+                    color: isLight ? "#475569" : "#cbd5e1",
+                    border: isLight ? "1px solid #cbd5e1" : "1px solid #2e2e38",
                     cursor: "pointer",
                   }}
                 >
                   <RotateCcw size={14} />
-                  Reset to Default (50m Focus / 10m Break)
+                  Reset to Default
                 </button>
                 
                 <button
@@ -506,7 +506,7 @@ const FocusBreak = () => {
                   className="w-full py-3 rounded-xl font-bold text-xs text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
                   style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 4px 14px rgba(59,130,246,0.3)", cursor: "pointer" }}
                 >
-                  Close Settings
+                  Save Settings
                 </button>
               </div>
             </div>
