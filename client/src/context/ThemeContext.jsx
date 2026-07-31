@@ -19,7 +19,8 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme]);
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // On mobile (<1024px), sidebar starts closed; on desktop it starts open
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));

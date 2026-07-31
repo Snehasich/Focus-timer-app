@@ -77,11 +77,19 @@ export const Side = () => {
   const getClass = (path) => {
     const isActive = location.pathname === path;
     if (isLight) {
-      return `p-2 rounded-2xl flex items-center gap-2 transition-all duration-150 cursor-pointer
+      return `p-2.5 rounded-2xl flex items-center gap-2.5 transition-all duration-150 cursor-pointer w-full text-left
       ${isActive ? "bg-blue-600 text-white shadow-sm font-semibold" : "text-gray-600 hover:bg-[#e2e8f0] hover:text-gray-900"}`;
     } else {
-      return `p-2 rounded-2xl flex items-center gap-2 transition-all duration-150 cursor-pointer
+      return `p-2.5 rounded-2xl flex items-center gap-2.5 transition-all duration-150 cursor-pointer w-full text-left
       ${isActive ? "bg-blue-600 text-white font-semibold" : "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"}`;
+    }
+  };
+
+  // Auto-close sidebar on mobile when navigating
+  const handleNavigate = (path) => {
+    navigate(path);
+    if (window.innerWidth < 1024) {
+      toggleSidebar();
     }
   };
 
@@ -118,13 +126,15 @@ export const Side = () => {
         .sidebar-nav:hover::-webkit-scrollbar { width: 4px; }
         .sidebar-nav:hover::-webkit-scrollbar-thumb { background: ${isLight ? "#94a3b8" : "#555555"}; }
 
-        @media (max-width: 767px) {
+        /* Mobile: sidebar is always a fixed overlay */
+        @media (max-width: 1023px) {
           .sidebar-responsive {
             position: fixed !important;
             top: 0;
             left: 0;
             z-index: 50 !important;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+            height: 100dvh !important;
           }
         }
       `}</style>
@@ -220,27 +230,27 @@ export const Side = () => {
           <div 
             className="sidebar-nav flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto pr-1 py-1"
           >
-            <button onClick={() => navigate("/")} className={getClass("/")}>
+            <button onClick={() => handleNavigate("/")} className={getClass("/")}>
               <House size={18} /> Home
             </button>
 
-            <button onClick={() => navigate("/focusbreak")} className={getClass("/focusbreak")}>
+            <button onClick={() => handleNavigate("/focusbreak")} className={getClass("/focusbreak")}>
               <Timer size={18} /> Timer
             </button>
 
-            <button onClick={() => navigate("/stopwatch")} className={getClass("/stopwatch")}>
+            <button onClick={() => handleNavigate("/stopwatch")} className={getClass("/stopwatch")}>
               <TimerReset size={18} /> StopWatch
             </button>
 
-            <button onClick={() => navigate("/calendar")} className={getClass("/calendar")}>
+            <button onClick={() => handleNavigate("/calendar")} className={getClass("/calendar")}>
               <Calendar size={18} /> Calendar
             </button>
 
-            <button onClick={() => navigate("/notes")} className={getClass("/notes")}>
+            <button onClick={() => handleNavigate("/notes")} className={getClass("/notes")}>
               <NotebookPen size={18} /> Notes
             </button>
 
-            <button onClick={() => navigate("/dashboard")} className={getClass("/dashboard")}>
+            <button onClick={() => handleNavigate("/dashboard")} className={getClass("/dashboard")}>
               <LayoutDashboard size={18} /> Dashboard
             </button>
           </div>

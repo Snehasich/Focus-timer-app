@@ -42,11 +42,11 @@ export const CalendarView = () => {
     <div
       style={{
         height: "100vh",
-        padding: "24px",
+        padding: "clamp(12px, 3vw, 24px)",
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
-        gap: 16,
+        gap: 12,
       }}
     >
       <div
@@ -140,28 +140,28 @@ export const CalendarView = () => {
         </div>
 
         {/* Days of Week */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, textAlign: "center" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "clamp(3px, 1.5vw, 8px)", textAlign: "center" }}>
           {daysOfWeek.map((day) => (
             <div
               key={day}
               style={{
-                fontSize: "0.78rem",
+                fontSize: "clamp(0.6rem, 1.5vw, 0.78rem)",
                 fontWeight: 700,
                 color: isLight ? "#94a3b8" : "#6b7280",
                 textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                padding: "8px 0",
+                letterSpacing: "0.03em",
+                padding: "clamp(4px, 1vw, 8px) 0",
               }}
             >
-              {day}
+              {day.slice(0, window.innerWidth < 480 ? 1 : 3)}
             </div>
           ))}
         </div>
 
         {/* Calendar Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, flex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "clamp(3px, 1.5vw, 8px)", flex: 1 }}>
           {[...Array(startDay)].map((_, i) => (
-            <div key={`empty-${i}`} style={{ borderRadius: 12, opacity: 0.2 }} />
+            <div key={`empty-${i}`} style={{ borderRadius: 10, opacity: 0.2 }} />
           ))}
 
           {[...Array(totalDays)].map((_, i) => {
@@ -171,9 +171,9 @@ export const CalendarView = () => {
               <div
                 key={dayNum}
                 style={{
-                  borderRadius: 14,
-                  padding: "10px",
-                  minHeight: 70,
+                  borderRadius: "clamp(8px, 2vw, 14px)",
+                  padding: "clamp(4px, 1.5vw, 10px)",
+                  minHeight: "clamp(44px, 10vw, 70px)",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
@@ -191,34 +191,38 @@ export const CalendarView = () => {
                   boxShadow: activeToday ? "0 4px 14px rgba(59,130,246,0.3)" : "none",
                   transition: "transform 0.15s ease",
                   cursor: "pointer",
+                  overflow: "hidden",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: activeToday ? 800 : 600, fontSize: "0.9rem" }}>{dayNum}</span>
+                  <span style={{ fontWeight: activeToday ? 800 : 600, fontSize: "clamp(0.65rem, 2vw, 0.9rem)" }}>{dayNum}</span>
                   {activeToday && (
-                    <span style={{ fontSize: "0.65rem", fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "2px 6px", borderRadius: 10 }}>
+                    <span style={{ fontSize: "0.55rem", fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "1px 4px", borderRadius: 8, display: window.innerWidth < 400 ? "none" : "inline" }}>
                       Today
                     </span>
                   )}
                 </div>
 
-                {dayNum % 3 === 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {dayNum % 3 === 0 && window.innerWidth > 380 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                     <div
                       style={{
-                        width: 6,
-                        height: 6,
+                        width: 5,
+                        height: 5,
                         borderRadius: "50%",
                         background: activeToday ? "#ffffff" : "#10b981",
+                        flexShrink: 0,
                       }}
                     />
                     <span
                       style={{
-                        fontSize: "0.68rem",
+                        fontSize: "0.6rem",
                         opacity: activeToday ? 0.9 : 0.6,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
                       }}
                     >
-                      Focus Target
+                      Focus
                     </span>
                   </div>
                 )}

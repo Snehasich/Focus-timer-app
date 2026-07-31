@@ -96,9 +96,9 @@ const FocusTimer = () => {
         .btn-pulse   { animation: pulseGlow 0.3s ease; }
         .ctrl-btn {
           display:flex; align-items:center; gap:7px;
-          padding: 9px 22px; border-radius: 50px; border: none;
+          padding: 10px 20px; border-radius: 50px; border: none;
           font-weight: 600; font-size: 0.87rem; cursor: pointer;
-          outline: none;
+          outline: none; min-height: 44px;
           transition: transform 0.15s ease, filter 0.15s ease;
         }
         .ctrl-btn:hover  { transform: translateY(-1px); filter: brightness(1.1); }
@@ -112,8 +112,8 @@ const FocusTimer = () => {
         {/* ── SVG Ring — responsive via viewBox ── */}
         <div style={{
           position: "relative",
-          width: "clamp(200px, 40vmin, 290px)",
-          height: "clamp(200px, 40vmin, 290px)",
+          width: "clamp(180px, 45vmin, 290px)",
+          height: "clamp(180px, 45vmin, 290px)",
         }}>
           <svg
             viewBox={`0 0 ${SIZE} ${SIZE}`}

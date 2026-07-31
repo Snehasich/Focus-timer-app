@@ -58,13 +58,19 @@ const Layout = () => {
       {!sidebarOpen && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-[26px] left-[26px] z-50 w-9 h-9 rounded-full shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center hover:scale-105"
+          className="fixed z-50 flex items-center justify-center hover:scale-105 transition-all duration-200"
           style={{
+            top: 14,
+            left: 14,
+            width: 36,
+            height: 36,
+            borderRadius: 10,
             background: theme === "light" ? "#ffffff" : "#161616",
             border: theme === "light" ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
             color: theme === "light" ? "#4b5563" : "#f3f4f6",
             cursor: "pointer",
             outline: "none",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
           }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
@@ -74,7 +80,9 @@ const Layout = () => {
       <div 
         className="flex-1 h-screen overflow-y-auto transition-all duration-300" 
         style={{ 
-          paddingLeft: !sidebarOpen ? 46 : 0,
+          paddingLeft: !sidebarOpen ? "clamp(54px, 6vw, 64px)" : 0,
+          paddingRight: 0,
+          minWidth: 0,
         }}
       >
         <Outlet />
@@ -88,16 +96,19 @@ const FocusBreakWrapper = () => {
   const { theme } = useTheme();
   const isLight = theme === "light";
   return (
-    <div className="w-full min-h-screen overflow-y-auto flex items-center justify-center p-4 sm:p-6 box-border">
+    <div className="w-full min-h-screen overflow-y-auto flex items-center justify-center p-3 sm:p-6 box-border">
       <div
-        className="w-full rounded-3xl flex items-center justify-center"
+        className="w-full"
         style={{
           background: isLight ? "#ffffff" : "#111",
           border: isLight ? "1px solid #e5e7eb" : "1px solid #222",
-          borderRadius: 24,
+          borderRadius: 20,
           padding: "clamp(16px, 4vw, 40px)",
           boxShadow: isLight ? "0 8px 24px rgba(15,23,42,0.03)" : "0 10px 40px rgba(0,0,0,0.4)",
           transition: "background 0.2s, border-color 0.2s, box-shadow 0.2s",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}>
         <FocusBreak />
       </div>
@@ -154,7 +165,7 @@ function App() {
 
             {/* Stopwatch */}
             <Route path="stopwatch" element={
-              <div style={{ height: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+              <div style={{ minHeight: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
                 <StopWatch />
               </div>
             } />

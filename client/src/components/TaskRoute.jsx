@@ -38,11 +38,11 @@ export const TaskRoute = memo(({
         .ask-btn:active { transform: scale(0.95); }
       `}</style>
 
-      <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-3 w-full md:w-[98%] mt-3">
+      <div className="flex flex-wrap justify-between items-center gap-2 w-full">
 
         {/* LEFT HEADER BAR */}
         <div
-          className="h-[42px] px-4 rounded-full flex items-center gap-3 sm:gap-4 w-full sm:w-fit overflow-visible max-w-full sidebar-nav"
+          className="h-[44px] px-4.5 rounded-full flex items-center gap-3.5 overflow-visible"
           style={{
             background: isLight ? "#ffffff" : "#161616",
             border: isLight ? "1px solid #e2e8f0" : "1px solid #2a2a2a",
@@ -53,38 +53,38 @@ export const TaskRoute = memo(({
           {/* LEFT */}
           <div className="flex items-center gap-2" style={{ color: isLight ? "#111827" : "#fff" }}>
             <NotebookPen className="w-4 h-4" />
-            <span className="lg:text-sm whitespace-nowrap font-semibold tracking-wide">
+            <span className="text-[14px] font-bold tracking-wide whitespace-nowrap">
               All my tasks
             </span>
           </div>
 
-          <div className="h-4 w-px" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
+          <div className="h-4.5 w-px mx-0.5" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
 
           {/* VIEW */}
           <Dropdown 
             items={["Default", "A-Z (Alphabetical)", "Z-A (Reverse)", "Completed First", "Active First"]}
             onItemClick={onSortChange}
           >
-            <div className="flex items-center gap-1 cursor-pointer">
+            <div className="flex items-center gap-1.5 cursor-pointer">
               <ArrowDownUp className="w-3.5 h-3.5" />
-              <span className="text-sm" style={{ color: isLight ? "#111827" : "#fff" }}>View: {currentSort}</span>
+              <span className="text-[13.5px] font-medium" style={{ color: isLight ? "#111827" : "#fff" }}>View: {currentSort}</span>
             </div>
           </Dropdown>
 
-          <div className="h-4 w-px" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
+          <div className="h-4.5 w-px mx-0.5" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
 
           {/* FILTER */}
           <Dropdown 
             items={["All Tasks", "Active Only", "Completed Only"]}
             onItemClick={onFilterChange}
           >
-            <div className="flex items-center gap-1 cursor-pointer">
+            <div className="flex items-center gap-1.5 cursor-pointer">
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span className="text-sm" style={{ color: isLight ? "#111827" : "#fff" }}>Filter: {currentFilter}</span>
+              <span className="text-[13.5px] font-medium" style={{ color: isLight ? "#111827" : "#fff" }}>Filter: {currentFilter}</span>
             </div>
           </Dropdown>
 
-          <div className="h-4 w-px" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
+          <div className="h-4.5 w-px mx-0.5" style={{ background: isLight ? "#cbd5e1" : "#374151" }} />
 
           {/* DROPDOWN (Ellipsis) */}
           <Dropdown 
@@ -98,12 +98,13 @@ export const TaskRoute = memo(({
 
         </div>
 
+
         {/* RIGHT CONTROLS */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
-            className="theme-btn flex items-center justify-center w-[42px] h-[42px] rounded-full"
+            className="theme-btn flex items-center justify-center w-[44px] h-[44px] rounded-full"
             style={{
               background: isLight ? "#ffffff" : "#161616",
               border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
@@ -116,7 +117,7 @@ export const TaskRoute = memo(({
 
           {/* Ask Me Button */}
           <div
-            className="ask-btn h-[42px] px-4 rounded-full flex items-center"
+            className="ask-btn h-[44px] px-3.5 rounded-full flex items-center"
             style={{
               background: isLight ? "#ffffff" : "#161616",
               border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
@@ -125,12 +126,12 @@ export const TaskRoute = memo(({
             }}
             onClick={() => alert("Under Process")}
           >
-            <img src={geminiIcon} alt="Gemini Logo" className="w-4 h-4 mr-2" />
-            <span className="text-sm font-semibold tracking-wide">Ask Me</span>
+            <img src={geminiIcon} alt="Gemini Logo" className="w-4 h-4 mr-1.5" />
+            <span className="text-[14px] font-bold tracking-wide">Ask Me</span>
           </div>
         </div>
 
       </div>
     </>
   );
-});
+});

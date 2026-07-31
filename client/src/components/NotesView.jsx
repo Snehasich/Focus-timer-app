@@ -60,9 +60,9 @@ export const NotesView = () => {
   );
 
   return (
-    <div className="h-screen p-3 sm:p-6 box-border flex flex-col gap-4">
+    <div className="h-screen p-3 sm:p-5 box-border flex flex-col gap-3">
       <div
-        className="flex flex-col md:flex-row flex-1 gap-5 overflow-hidden rounded-3xl p-6"
+        className="flex flex-col md:flex-row flex-1 gap-4 overflow-hidden rounded-2xl p-3 sm:p-5"
         style={{
           background: isLight ? "#ffffff" : "#111111",
           border: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
@@ -71,10 +71,10 @@ export const NotesView = () => {
       >
         {/* Left Column: Note List */}
         <div
-          className="w-full md:w-[260px] flex flex-col gap-3 pb-3 md:pb-0"
+          className="w-full md:w-[240px] md:flex-shrink-0 flex flex-col gap-2 overflow-hidden md:border-r md:border-b-0 md:pr-4"
           style={{
-            borderRight: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
-            paddingRight: 16,
+            borderBottom: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
+            paddingBottom: 10,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -174,7 +174,7 @@ export const NotesView = () => {
         </div>
 
         {/* Right Column: Note Editor */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="flex-1 flex flex-col gap-3 min-h-0 md:pl-2" style={{ overflow: "hidden" }}>
           {activeNote ? (
             <>
               <input
@@ -183,7 +183,7 @@ export const NotesView = () => {
                 onChange={(e) => handleUpdateNote("title", e.target.value)}
                 placeholder="Note Title..."
                 style={{
-                  fontSize: "1.3rem",
+                  fontSize: "clamp(1rem, 3vw, 1.3rem)",
                   fontWeight: 700,
                   background: "transparent",
                   border: "none",
@@ -191,6 +191,7 @@ export const NotesView = () => {
                   color: isLight ? "#111827" : "#f3f4f6",
                   borderBottom: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
                   paddingBottom: 8,
+                  width: "100%",
                 }}
               />
               <textarea

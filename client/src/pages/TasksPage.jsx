@@ -8,8 +8,8 @@ export const TasksPage = () => {
   const [bulkAction, setBulkAction] = useState(null);
 
   return (
-    <div className="h-screen p-3 sm:p-6 box-border flex flex-col">
-      <div style={{ marginBottom: "16px" }}>
+    <div className="h-screen box-border flex flex-col overflow-hidden" style={{ padding: "29px 24px 24px" }}>
+      <div style={{ flexShrink: 0 }}>
         <TaskRoute 
           currentFilter={filter} 
           onFilterChange={setFilter} 
@@ -18,7 +18,7 @@ export const TasksPage = () => {
           onBulkAction={setBulkAction}
         />
       </div>
-      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+      <div style={{ flex: 1, display: "flex", minHeight: 0, marginTop: 30 }}>
         <TaskRouteTask 
           filter={filter} 
           sortBy={sortBy} 

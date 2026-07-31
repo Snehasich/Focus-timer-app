@@ -109,13 +109,13 @@ const FocusBreak = () => {
         }
       `}</style>
 
-      <div style={{ color: isLight ? "#111827" : "white", width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ color: isLight ? "#111827" : "white", width: "100%", maxWidth: "clamp(280px, 90vw, 460px)", display: "flex", flexDirection: "column", alignItems: "center" }}>
 
         {/* ── Pill Tab Switcher ── */}
         <div style={{
           display: "flex",
           justifyContent: "center",
-          marginBottom: 28,
+          marginBottom: "clamp(16px, 4vw, 28px)",
         }}>
           <div style={{
             display: "inline-flex",

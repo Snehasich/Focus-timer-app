@@ -181,14 +181,13 @@ export const TaskRouteTask = memo(({
         .progress-bar { transition: width 0.6s cubic-bezier(0.22,1,0.36,1); }
       `}</style>
 
-      <div className="flex flex-col lg:flex-row gap-6 w-[96%] mt-3" style={{ flex: 1, height: "100%" }}>
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 w-full h-full" style={{ flex: 1, minHeight: 0 }}>
 
         {/* ── LEFT CARD — Tasks ── */}
         <div
-          className="card-left-normal w-full lg:max-w-[380px]"
+          className="card-left-normal w-full lg:max-w-[380px] lg:min-w-[320px] flex-shrink-0"
           style={{
             opacity: leftVisible ? undefined : 0,
-            width: "100%",
             height: "100%",
             borderRadius: 20,
             border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.8)",
@@ -293,7 +292,7 @@ export const TaskRouteTask = memo(({
 
         {/* ── RIGHT CARD — Timer ── */}
         <div
-          className="card-right-normal"
+          className="card-right-normal w-full lg:flex-1"
           style={{
             opacity: rightVisible ? undefined : 0,
             flex: 1,
