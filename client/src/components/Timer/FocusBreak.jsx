@@ -3,7 +3,7 @@ import FocusTimer from './FocusTimer';
 import BreakTimer from './BreakTimer';
 import { useTheme } from '../../context/ThemeContext';
 import { useTimer } from '../../context/TimerContext';
-import { Settings, X, Check, Clock, Coffee } from 'lucide-react';
+import { NotebookPen, X, Check, Clock, Coffee } from 'lucide-react';
 
 const FocusBreak = () => {
   const [mode, setMode] = useState('focus');
@@ -141,7 +141,7 @@ const FocusBreak = () => {
 
       <div style={{ color: isLight ? "#111827" : "white", width: "100%", maxWidth: "clamp(280px, 90vw, 460px)", display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
 
-        {/* ── Top-Right Settings Icon Button ── */}
+        {/* ── Top-Right Pen & Paper Edit Icon Button ── */}
         <button
           onClick={() => {
             setCustomFocusMins(Math.round(focusInitialTime / 60));
@@ -156,9 +156,9 @@ const FocusBreak = () => {
             cursor: "pointer",
             zIndex: 10,
           }}
-          title="Timer Duration Settings"
+          title="Edit Timer Durations"
         >
-          <Settings size={17} />
+          <NotebookPen size={17} />
         </button>
 
         {/* ── Pill Tab Switcher ── */}
@@ -347,9 +347,9 @@ const FocusBreak = () => {
               {/* Drawer Header */}
               <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: isLight ? "#e2e8f0" : "#26262e" }}>
                 <div className="flex items-center gap-2">
-                  <Settings size={20} className="text-blue-500" />
+                  <NotebookPen size={20} className="text-blue-500" />
                   <h3 className="m-0 font-black text-lg" style={{ color: isLight ? "#0f172a" : "#ffffff" }}>
-                    Timer Settings
+                    Edit Timer
                   </h3>
                 </div>
                 <button
