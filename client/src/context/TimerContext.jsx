@@ -4,18 +4,42 @@ const TimerContext = createContext();
 
 export const TimerProvider = ({ children }) => {
   // ── Focus Timer State ──
-  const focusInitialTime = 50 * 60;
+  const [focusInitialTime, setFocusInitialTimeState] = useState(() => {
+    const saved = localStorage.getItem("app_focus_initial_time");
+    return saved ? parseInt(saved, 10) : 50 * 60;
+  });
   const [focusTime, setFocusTime] = useState(focusInitialTime);
   const [isFocusRunning, setIsFocusRunning] = useState(false);
   const [focusStartedAt, setFocusStartedAt] = useState(null);
   const [focusLoop, setFocusLoop] = useState(0);
 
   // ── Break Timer State ──
-  const breakInitialTime = 10 * 60;
+  const [breakInitialTime, setBreakInitialTimeState] = useState(() => {
+    const saved = localStorage.getItem("app_break_initial_time");
+    return saved ? parseInt(saved, 10) : 10 * 60;
+  });
   const [breakTime, setBreakTime] = useState(breakInitialTime);
   const [isBreakRunning, setIsBreakRunning] = useState(false);
   const [breakStartedAt, setBreakStartedAt] = useState(null);
   const [breakLoop, setBreakLoop] = useState(0);
+
+  const setFocusInitialTime = (seconds) => {
+    const validSecs = Math.max(60, Math.min(180 * 60, seconds));
+    localStorage.setItem("app_focus_initial_time", validSecs);
+    setFocusInitialTimeState(validSecs);
+    setFocusTime(validSecs);
+    setIsFocusRunning(false);
+    setFocusStartedAt(null);
+  };
+
+  const setBreakInitialTime = (seconds) => {
+    const validSecs = Math.max(60, Math.min(120 * 60, seconds));
+    localStorage.setItem("app_break_initial_time", validSecs);
+    setBreakInitialTimeState(validSecs);
+    setBreakTime(validSecs);
+    setIsBreakRunning(false);
+    setBreakStartedAt(null);
+  };
 
   // ── StopWatch State ──
   const [isStopWatchRunning, setIsStopWatchRunning] = useState(false);
@@ -90,6 +114,7 @@ export const TimerProvider = ({ children }) => {
     <TimerContext.Provider
       value={{
         focusInitialTime,
+        setFocusInitialTime,
         focusTime,
         setFocusTime,
         isFocusRunning,
@@ -100,6 +125,7 @@ export const TimerProvider = ({ children }) => {
         setFocusLoop,
 
         breakInitialTime,
+        setBreakInitialTime,
         breakTime,
         setBreakTime,
         isBreakRunning,
