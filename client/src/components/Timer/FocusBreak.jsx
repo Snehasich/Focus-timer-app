@@ -3,7 +3,7 @@ import FocusTimer from './FocusTimer';
 import BreakTimer from './BreakTimer';
 import { useTheme } from '../../context/ThemeContext';
 import { useTimer } from '../../context/TimerContext';
-import { NotebookPen, X, Check, Clock, Coffee } from 'lucide-react';
+import { NotebookPen, X, Check, Clock, Coffee, RotateCcw } from 'lucide-react';
 
 const FocusBreak = () => {
   const [mode, setMode] = useState('focus');
@@ -85,6 +85,13 @@ const FocusBreak = () => {
     const valid = Math.max(1, Math.min(120, parseInt(mins, 10) || 10));
     setBreakInitialTime(valid * 60);
     setCustomBreakMins(valid);
+  };
+
+  const handleResetSettings = () => {
+    setFocusInitialTime(50 * 60);
+    setBreakInitialTime(10 * 60);
+    setCustomFocusMins(50);
+    setCustomBreakMins(10);
   };
 
   const isLight = theme === "light";
@@ -478,14 +485,30 @@ const FocusBreak = () => {
                 </div>
               </div>
 
-              {/* Close Button at bottom */}
-              <button
-                onClick={() => setShowSettings(false)}
-                className="w-full py-3 rounded-xl font-bold text-xs text-white mt-auto transition-all hover:scale-[1.02] active:scale-[0.98]"
-                style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 4px 14px rgba(59,130,246,0.3)" }}
-              >
-                Close Settings
-              </button>
+              {/* Footer Buttons */}
+              <div className="flex flex-col gap-2.5 mt-auto pt-4 border-t" style={{ borderColor: isLight ? "#e2e8f0" : "#26262e" }}>
+                <button
+                  onClick={handleResetSettings}
+                  className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    background: isLight ? "#fee2e2" : "rgba(239,68,68,0.1)",
+                    color: "#ef4444",
+                    border: isLight ? "1px solid #fca5a5" : "1px solid rgba(239,68,68,0.25)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <RotateCcw size={14} />
+                  Reset to Default (50m Focus / 10m Break)
+                </button>
+                
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="w-full py-3 rounded-xl font-bold text-xs text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 4px 14px rgba(59,130,246,0.3)", cursor: "pointer" }}
+                >
+                  Close Settings
+                </button>
+              </div>
             </div>
           </div>
         )}
