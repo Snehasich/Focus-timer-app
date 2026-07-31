@@ -311,44 +311,50 @@ const FocusBreak = () => {
           </div>
         )}
 
-        {/* ── Timer Settings Modal ── */}
+        {/* ── Timer Settings Slide-In Drawer ── */}
         {showSettings && (
-          <div style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.55)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            animation: "timerFadeIn 0.2s ease forwards",
-          }}>
-            <div style={{
-              background: isLight ? "#ffffff" : "#16161a",
-              border: isLight ? "1px solid #e5e7eb" : "1px solid #282832",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-              borderRadius: 24,
-              padding: 24,
-              width: "90%",
-              maxWidth: 420,
+          <div 
+            onClick={() => setShowSettings(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.45)",
+              backdropFilter: "blur(5px)",
+              WebkitBackdropFilter: "blur(5px)",
               display: "flex",
-              flexDirection: "column",
-              gap: 20,
-              animation: "timerFadeIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards",
-            }}>
-              {/* Header */}
-              <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: isLight ? "#e2e8f0" : "#26262e" }}>
+              justifyContent: "flex-end",
+              zIndex: 9999,
+            }}
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="slide-drawer-in"
+              style={{
+                background: isLight ? "#ffffff" : "#141418",
+                borderLeft: isLight ? "1px solid #e5e7eb" : "1px solid #282832",
+                boxShadow: "-12px 0 40px rgba(0, 0, 0, 0.5)",
+                width: "100%",
+                maxWidth: 360,
+                height: "100%",
+                padding: 24,
+                display: "flex",
+                flexDirection: "column",
+                gap: 20,
+                boxSizing: "border-box",
+                overflowY: "auto",
+              }}
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: isLight ? "#e2e8f0" : "#26262e" }}>
                 <div className="flex items-center gap-2">
-                  <Settings size={18} className="text-blue-500" />
-                  <h3 className="m-0 font-extrabold text-lg" style={{ color: isLight ? "#0f172a" : "#ffffff" }}>
-                    Timer Duration Settings
+                  <Settings size={20} className="text-blue-500" />
+                  <h3 className="m-0 font-black text-lg" style={{ color: isLight ? "#0f172a" : "#ffffff" }}>
+                    Timer Settings
                   </h3>
                 </div>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="p-1 rounded-lg transition-all hover:bg-black/10"
+                  className="p-1.5 rounded-full transition-all hover:bg-black/10 hover:scale-110 active:scale-95"
                   style={{ color: isLight ? "#64748b" : "#94a3b8" }}
                 >
                   <X size={18} />
@@ -356,17 +362,19 @@ const FocusBreak = () => {
               </div>
 
               {/* 1. FOCUS TIMER SETTINGS */}
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between text-xs font-bold" style={{ color: "#3b82f6" }}>
                   <div className="flex items-center gap-1.5">
-                    <Clock size={14} />
+                    <Clock size={15} />
                     <span>Focus Duration</span>
                   </div>
-                  <span>{Math.round(focusInitialTime / 60)} Minutes</span>
+                  <span className="px-2 py-0.5 rounded-full text-[11px]" style={{ background: isLight ? "#eff6ff" : "#1e293b" }}>
+                    {Math.round(focusInitialTime / 60)} Mins
+                  </span>
                 </div>
 
                 {/* Focus Presets */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {[15, 25, 30, 45, 50, 60].map((m) => (
                     <button
                       key={m}
@@ -393,7 +401,7 @@ const FocusBreak = () => {
                     value={customFocusMins}
                     onChange={(e) => setCustomFocusMins(e.target.value)}
                     placeholder="Mins"
-                    className="w-20 px-2.5 py-1 rounded-xl text-xs font-bold outline-none border text-center"
+                    className="w-20 px-2.5 py-1.5 rounded-xl text-xs font-bold outline-none border text-center"
                     style={{
                       background: isLight ? "#f8fafc" : "#111114",
                       borderColor: isLight ? "#cbd5e1" : "#33333d",
@@ -402,10 +410,10 @@ const FocusBreak = () => {
                   />
                   <button
                     onClick={() => handleApplyFocusMins(customFocusMins)}
-                    className="px-3 py-1 rounded-xl text-xs font-bold text-white flex items-center gap-1 hover:scale-105"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold text-white flex items-center gap-1 hover:scale-105"
                     style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)" }}
                   >
-                    <Check size={12} /> Apply
+                    <Check size={13} /> Apply
                   </button>
                 </div>
               </div>
@@ -414,17 +422,19 @@ const FocusBreak = () => {
               <div style={{ height: 1, background: isLight ? "#e2e8f0" : "#26262e" }} />
 
               {/* 2. BREAK TIMER SETTINGS */}
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between text-xs font-bold" style={{ color: "#10b981" }}>
                   <div className="flex items-center gap-1.5">
-                    <Coffee size={14} />
+                    <Coffee size={15} />
                     <span>Break Duration</span>
                   </div>
-                  <span>{Math.round(breakInitialTime / 60)} Minutes</span>
+                  <span className="px-2 py-0.5 rounded-full text-[11px]" style={{ background: isLight ? "#ecfdf5" : "#064e3b" }}>
+                    {Math.round(breakInitialTime / 60)} Mins
+                  </span>
                 </div>
 
                 {/* Break Presets */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   {[5, 10, 15, 20, 30].map((m) => (
                     <button
                       key={m}
@@ -451,7 +461,7 @@ const FocusBreak = () => {
                     value={customBreakMins}
                     onChange={(e) => setCustomBreakMins(e.target.value)}
                     placeholder="Mins"
-                    className="w-20 px-2.5 py-1 rounded-xl text-xs font-bold outline-none border text-center"
+                    className="w-20 px-2.5 py-1.5 rounded-xl text-xs font-bold outline-none border text-center"
                     style={{
                       background: isLight ? "#f8fafc" : "#111114",
                       borderColor: isLight ? "#cbd5e1" : "#33333d",
@@ -460,21 +470,21 @@ const FocusBreak = () => {
                   />
                   <button
                     onClick={() => handleApplyBreakMins(customBreakMins)}
-                    className="px-3 py-1 rounded-xl text-xs font-bold text-white flex items-center gap-1 hover:scale-105"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold text-white flex items-center gap-1 hover:scale-105"
                     style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
                   >
-                    <Check size={12} /> Apply
+                    <Check size={13} /> Apply
                   </button>
                 </div>
               </div>
 
-              {/* Done / Close Button */}
+              {/* Close Button at bottom */}
               <button
                 onClick={() => setShowSettings(false)}
-                className="w-full py-2.5 rounded-xl font-bold text-xs text-white mt-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full py-3 rounded-xl font-bold text-xs text-white mt-auto transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", boxShadow: "0 4px 14px rgba(59,130,246,0.3)" }}
               >
-                Done
+                Close Settings
               </button>
             </div>
           </div>
