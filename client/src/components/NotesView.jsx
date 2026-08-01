@@ -309,23 +309,22 @@ export const NotesView = () => {
                 {/* Impressive Import Files Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] flex-shrink-0 cursor-pointer group"
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-2xl transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] flex-shrink-0 cursor-pointer group"
                   style={{
                     background: isLight 
-                      ? "linear-gradient(135deg, #ffffff, #f8fafc)" 
-                      : "#0c0c0e",
-                    border: isLight ? "1px solid #cbd5e1" : "1px solid #22222e",
+                      ? "#FFFFFE" 
+                      : "#111010",
+                    border: isLight ? "1px solid #cbd5e1" : "1px solid #222228",
                     boxShadow: isLight 
-                      ? "0 4px 12px rgba(0,0,0,0.05)" 
-                      : "0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)",
+                      ? "0 2px 8px rgba(0,0,0,0.04)" 
+                      : "0 2px 8px rgba(0,0,0,0.4)",
                   }}
                   title="Import PDF, Word, Images & Documents"
                 >
                   <img
                     src={isLight ? "/attach-file-light.png" : "/attach-file-dark.png"}
                     alt="Import Files"
-                    className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
-                    style={{ mixBlendMode: isLight ? "normal" : "screen" }}
+                    className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105"
                   />
                   <div className="flex flex-col text-left pr-1">
                     <span 
