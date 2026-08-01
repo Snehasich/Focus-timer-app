@@ -36,6 +36,7 @@ export const NotesView = () => {
 
   const [activeNoteId, setActiveNoteId] = useState(() => notes[0]?.id || null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewingAttachment, setViewingAttachment] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("app_notes_normal", JSON.stringify(notes));
@@ -401,26 +402,25 @@ export const NotesView = () => {
                         >
                           {/* File Icon Badge */}
                           <div
-                            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-[10px]"
+                            onClick={() => setViewingAttachment(att)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-[10px] cursor-pointer hover:scale-105 transition-all"
                             style={{ background: badge.bg, color: badge.color }}
+                            title={`View ${att.name}`}
                           >
                             <BadgeIcon size={14} />
                           </div>
 
                           {/* File Name & Size */}
                           <div className="flex flex-col min-w-0 flex-1">
-                            <a
-                              href={att.dataUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              download={att.name}
-                              className="font-semibold truncate hover:underline flex items-center gap-1"
+                            <button
+                              onClick={() => setViewingAttachment(att)}
+                              className="font-semibold truncate hover:underline flex items-center gap-1 text-left bg-transparent border-0 p-0 cursor-pointer"
                               style={{ color: isLight ? "#0f172a" : "#f1f5f9" }}
-                              title={`Download/Open ${att.name}`}
+                              title={`Click to view ${att.name}`}
                             >
                               <span className="truncate">{att.name}</span>
                               <ExternalLink size={10} className="flex-shrink-0 opacity-60" />
-                            </a>
+                            </button>
                             <span className="text-[10px] opacity-60">
                               {badge.label} • {formatFileSize(att.size)}
                             </span>
@@ -433,7 +433,7 @@ export const NotesView = () => {
                               download={att.name}
                               className="p-1 hover:bg-black/10 rounded transition-all"
                               style={{ color: isLight ? "#475569" : "#94a3b8" }}
-                              title="Download File"
+                              title="Download Copy"
                             >
                               <Download size={13} />
                             </a>
@@ -461,6 +461,86 @@ export const NotesView = () => {
           )}
         </div>
       </div>
+
+      {/* ── File Preview Modal (Click to View) ── */}
+      {viewingAttachment && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6"
+          onClick={() => setViewingAttachment(null)}
+        >
+          <div 
+            className="w-full max-w-4xl max-h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            style={{
+              background: isLight ? "#ffffff" : "#141418",
+              border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a34",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: isLight ? "#e2e8f0" : "#26262e" }}>
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <Paperclip size={16} className="text-blue-500 flex-shrink-0" />
+                <span className="font-bold text-sm truncate" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+                  {viewingAttachment.name}
+                </span>
+                <span className="text-xs opacity-60 flex-shrink-0">({formatFileSize(viewingAttachment.size)})</span>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <a
+                  href={viewingAttachment.dataUrl}
+                  download={viewingAttachment.name}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md"
+                  title="Download File"
+                >
+                  <Download size={13} />
+                  <span>Save / Download</span>
+                </a>
+                <button
+                  onClick={() => setViewingAttachment(null)}
+                  className="p-1.5 rounded-xl hover:bg-gray-500/20 transition-all cursor-pointer"
+                  style={{ color: isLight ? "#64748b" : "#94a3b8" }}
+                  title="Close Preview"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body: Inline Viewer */}
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-[320px] max-h-[75vh]" style={{ background: isLight ? "#f8fafc" : "#0d0d10" }}>
+              {viewingAttachment.type?.startsWith("image/") || /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(viewingAttachment.name) ? (
+                <img
+                  src={viewingAttachment.dataUrl}
+                  alt={viewingAttachment.name}
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                />
+              ) : viewingAttachment.type === "application/pdf" || /\.pdf$/i.test(viewingAttachment.name) ? (
+                <iframe
+                  src={viewingAttachment.dataUrl}
+                  title={viewingAttachment.name}
+                  className="w-full h-[70vh] rounded-lg border-0"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                  <FileText size={48} className="text-blue-500 opacity-80" />
+                  <p className="font-semibold text-sm" style={{ color: isLight ? "#334155" : "#cbd5e1" }}>
+                    Direct inline preview not supported for this file type.
+                  </p>
+                  <a
+                    href={viewingAttachment.dataUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all shadow-md"
+                  >
+                    Open in New Window / Tab
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
