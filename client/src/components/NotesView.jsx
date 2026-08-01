@@ -306,20 +306,17 @@ export const NotesView = () => {
                   }}
                 />
 
-                {/* Attach File Button */}
+                {/* Attach File Image Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
-                  style={{
-                    background: isLight ? "#eff6ff" : "#1e293b",
-                    border: isLight ? "1px solid #bfdbfe" : "1px solid #334155",
-                    color: "#3b82f6",
-                    cursor: "pointer",
-                  }}
+                  className="p-0 border-0 bg-transparent cursor-pointer flex-shrink-0"
                   title="Attach PDF, Word, Images, etc."
                 >
-                  <Paperclip size={14} />
-                  <span>Attach File</span>
+                  <img
+                    src={isLight ? "/attach-file-light.png" : "/attach-file-dark.png"}
+                    alt="Attach File"
+                    className="h-8 sm:h-9 w-auto object-contain hover:scale-105 active:scale-95 transition-all"
+                  />
                 </button>
 
                 <input

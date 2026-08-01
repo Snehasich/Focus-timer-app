@@ -146,7 +146,7 @@ const FocusBreak = () => {
         .settings-preset-btn:hover { transform: translateY(-1px); }
       `}</style>
 
-      <div className="w-full h-full flex flex-col items-center justify-center my-auto relative" style={{ color: isLight ? "#111827" : "white" }}>
+      <div style={{ color: isLight ? "#111827" : "white", width: "100%", maxWidth: "clamp(280px, 90vw, 460px)", display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
 
         {/* ── Top-Right Pen & Paper Edit Icon Button ── */}
         <button
@@ -155,25 +155,23 @@ const FocusBreak = () => {
             setCustomBreakMins(Math.round(breakInitialTime / 60));
             setShowSettings(true);
           }}
-          className="absolute top-0 right-0 p-2.5 rounded-full transition-all hover:scale-110 active:scale-95 shadow-md"
+          className="absolute top-0 right-0 p-2 rounded-full transition-all hover:scale-110 active:scale-95"
           style={{
             background: isLight ? "#f1f5f9" : "#1a1a20",
             border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a34",
             color: isLight ? "#475569" : "#9ca3af",
             cursor: "pointer",
-            zIndex: 20,
+            zIndex: 10,
           }}
           title="Edit Timer Durations"
         >
-          <NotebookPen size={18} />
+          <NotebookPen size={17} />
         </button>
 
         {/* ── Pill Tab Switcher ── */}
         <div style={{
           display: "flex",
           justifyContent: "center",
-          width: "100%",
-          maxWidth: "460px",
           marginBottom: "clamp(16px, 4vw, 28px)",
         }}>
           <div style={{

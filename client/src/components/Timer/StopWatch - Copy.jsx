@@ -268,7 +268,7 @@ export const StopWatch = memo(() => {
             </div>
 
             {/* Controls Bar */}
-            <div className="flex items-center gap-2.5 sm:gap-3.5 mt-6 justify-center">
+            <div className="flex items-center gap-3 sm:gap-4 mt-8 flex-wrap justify-center">
               {/* Start / Pause */}
               <button
                 onClick={handleStartPause}
