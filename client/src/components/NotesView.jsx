@@ -306,17 +306,41 @@ export const NotesView = () => {
                   }}
                 />
 
-                {/* Attach File Image Button */}
+                {/* Impressive Import Files Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-0 border-0 bg-transparent cursor-pointer flex-shrink-0"
-                  title="Attach PDF, Word, Images, etc."
+                  className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] flex-shrink-0 cursor-pointer group"
+                  style={{
+                    background: isLight 
+                      ? "linear-gradient(135deg, #ffffff, #f1f5f9)" 
+                      : "linear-gradient(135deg, #18181c, #111115)",
+                    border: isLight ? "1px solid #cbd5e1" : "1px solid #2e2e38",
+                    boxShadow: isLight 
+                      ? "0 4px 12px rgba(0,0,0,0.05)" 
+                      : "0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+                  }}
+                  title="Import PDF, Word, Images & Documents"
                 >
                   <img
                     src={isLight ? "/attach-file-light.png" : "/attach-file-dark.png"}
-                    alt="Attach File"
-                    className="h-8 sm:h-9 w-auto object-contain hover:scale-105 active:scale-95 transition-all"
+                    alt="Import Files"
+                    className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
                   />
+                  <div className="flex flex-col text-left pr-1">
+                    <span 
+                      className="text-xs font-black tracking-wide uppercase"
+                      style={{
+                        background: "linear-gradient(135deg, #3b82f6, #60a5fa)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      Import Files
+                    </span>
+                    <span className="text-[10px] font-semibold" style={{ color: isLight ? "#64748b" : "#94a3b8" }}>
+                      PDF, Word, Docs
+                    </span>
+                  </div>
                 </button>
 
                 <input
