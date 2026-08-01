@@ -142,6 +142,26 @@ export const NotesView = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
+  const createPdfBlobUrl = (dataUrl) => {
+    if (!dataUrl) return "";
+    if (dataUrl.startsWith("blob:")) return dataUrl;
+    try {
+      const parts = dataUrl.split(",");
+      const base64Str = parts.length > 1 ? parts[1] : parts[0];
+      const binaryStr = atob(base64Str);
+      const len = binaryStr.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      return URL.createObjectURL(blob);
+    } catch (err) {
+      console.error("PDF Blob conversion error:", err);
+      return dataUrl;
+    }
+  };
+
   const getFileBadge = (name, type) => {
     const ext = name.split(".").pop().toLowerCase();
     if (ext === "pdf" || type?.includes("pdf")) {
@@ -488,6 +508,16 @@ export const NotesView = () => {
 
               <div className="flex items-center gap-2 flex-shrink-0">
                 <a
+                  href={createPdfBlobUrl(viewingAttachment.dataUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-md"
+                  title="Open PDF in Full Window / Tab"
+                >
+                  <ExternalLink size={13} />
+                  <span>Open in New Tab</span>
+                </a>
+                <a
                   href={viewingAttachment.dataUrl}
                   download={viewingAttachment.name}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md"
@@ -516,11 +546,19 @@ export const NotesView = () => {
                   className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
                 />
               ) : viewingAttachment.type === "application/pdf" || /\.pdf$/i.test(viewingAttachment.name) ? (
-                <iframe
-                  src={viewingAttachment.dataUrl}
-                  title={viewingAttachment.name}
-                  className="w-full h-[70vh] rounded-lg border-0"
-                />
+                <div className="w-full h-full flex flex-col items-center justify-center min-h-[500px]">
+                  <object
+                    data={createPdfBlobUrl(viewingAttachment.dataUrl)}
+                    type="application/pdf"
+                    className="w-full h-[70vh] rounded-lg border-0 bg-white shadow-md"
+                  >
+                    <embed
+                      src={createPdfBlobUrl(viewingAttachment.dataUrl)}
+                      type="application/pdf"
+                      className="w-full h-[70vh] rounded-lg border-0 bg-white"
+                    />
+                  </object>
+                </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 p-8 text-center">
                   <FileText size={48} className="text-blue-500 opacity-80" />
