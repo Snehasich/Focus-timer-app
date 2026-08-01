@@ -312,12 +312,12 @@ export const NotesView = () => {
                   className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] flex-shrink-0 cursor-pointer group"
                   style={{
                     background: isLight 
-                      ? "linear-gradient(135deg, #ffffff, #f1f5f9)" 
-                      : "linear-gradient(135deg, #18181c, #111115)",
-                    border: isLight ? "1px solid #cbd5e1" : "1px solid #2e2e38",
+                      ? "linear-gradient(135deg, #ffffff, #f8fafc)" 
+                      : "#0c0c0e",
+                    border: isLight ? "1px solid #cbd5e1" : "1px solid #22222e",
                     boxShadow: isLight 
                       ? "0 4px 12px rgba(0,0,0,0.05)" 
-                      : "0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+                      : "0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)",
                   }}
                   title="Import PDF, Word, Images & Documents"
                 >
@@ -325,6 +325,7 @@ export const NotesView = () => {
                     src={isLight ? "/attach-file-light.png" : "/attach-file-dark.png"}
                     alt="Import Files"
                     className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+                    style={{ mixBlendMode: isLight ? "normal" : "screen" }}
                   />
                   <div className="flex flex-col text-left pr-1">
                     <span 
