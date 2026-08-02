@@ -126,15 +126,10 @@ export const Side = () => {
         .sidebar-nav:hover::-webkit-scrollbar { width: 4px; }
         .sidebar-nav:hover::-webkit-scrollbar-thumb { background: ${isLight ? "#94a3b8" : "#555555"}; }
 
-        /* Mobile: sidebar is always a fixed overlay */
+        /* Mobile: hide sidebar and use bottom floating navbar */
         @media (max-width: 1023px) {
           .sidebar-responsive {
-            position: fixed !important;
-            top: 0;
-            left: 0;
-            z-index: 50 !important;
-            box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
-            height: 100dvh !important;
+            display: none !important;
           }
         }
       `}</style>

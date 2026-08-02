@@ -398,7 +398,7 @@ export const NotesView = () => {
   ];
 
   return (
-    <div className="h-screen p-3 sm:p-5 box-border flex flex-col gap-3">
+    <div className="min-h-screen md:h-screen w-full p-2 sm:p-5 box-border flex flex-col gap-3 pb-24 md:pb-5">
       {/* Editor CSS Styles for Microsoft Word Formatting */}
       <style>{`
         .word-editor h1 { font-size: 1.45rem; font-weight: 800; margin-top: 0.6rem; margin-bottom: 0.3rem; color: ${isLight ? "#1d4ed8" : "#60a5fa"}; }
@@ -414,7 +414,7 @@ export const NotesView = () => {
       `}</style>
 
       <div
-        className="flex flex-col md:flex-row flex-1 gap-4 overflow-hidden rounded-2xl p-3 sm:p-5"
+        className="flex flex-col md:flex-row flex-1 gap-4 overflow-y-auto md:overflow-hidden rounded-2xl p-3 sm:p-5 min-h-0"
         style={{
           background: isLight ? "#ffffff" : "#111111",
           border: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
@@ -423,7 +423,7 @@ export const NotesView = () => {
       >
         {/* ── Left Column: Note List & Sidebar ── */}
         <div
-          className="w-full md:w-[260px] md:flex-shrink-0 flex flex-col gap-2.5 overflow-hidden md:border-r md:border-b-0 md:pr-4"
+          className="w-full md:w-[260px] md:flex-shrink-0 flex flex-col gap-2.5 overflow-hidden md:border-r md:border-b-0 md:pr-4 min-h-[220px] max-h-[300px] md:max-h-none"
           style={{
             borderBottom: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
             paddingBottom: 10,

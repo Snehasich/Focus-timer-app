@@ -181,20 +181,17 @@ export const TaskRouteTask = memo(({
         .progress-bar { transition: width 0.6s cubic-bezier(0.22,1,0.36,1); }
       `}</style>
 
-      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 w-full h-full" style={{ flex: 1, minHeight: 0 }}>
+      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 w-full flex-1 min-h-0">
 
         {/* ── LEFT CARD — Tasks ── */}
         <div
-          className="card-left-normal w-full lg:max-w-[380px] lg:min-w-[320px] flex-shrink-0"
+          className="card-left-normal w-full lg:max-w-[380px] lg:min-w-[320px] min-h-[350px] lg:h-full flex flex-col flex-shrink-0"
           style={{
             opacity: leftVisible ? undefined : 0,
-            height: "100%",
             borderRadius: 20,
             border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.8)",
             background: isLight ? "#ffffff" : "#111",
             padding: 20,
-            display: "flex",
-            flexDirection: "column",
             gap: 12,
             boxSizing: "border-box",
           }}
@@ -242,7 +239,7 @@ export const TaskRouteTask = memo(({
           )}
 
           {/* Task list */}
-          <div style={{ flex: 1, overflowY: "auto" }}>
+          <div style={{ flex: 1, overflowY: "auto" }} className="min-h-[160px]">
             <InsideTask tasks={sortedTasks} toggleTask={toggleTask} deleteTask={deleteTask} />
           </div>
 
@@ -292,21 +289,13 @@ export const TaskRouteTask = memo(({
 
         {/* ── RIGHT CARD — Timer ── */}
         <div
-          className="card-right-normal w-full lg:flex-1"
+          className="card-right-normal w-full lg:flex-1 min-h-[420px] lg:h-full flex flex-col items-center justify-center relative overflow-hidden"
           style={{
             opacity: rightVisible ? undefined : 0,
-            flex: 1,
-            height: "100%",
             borderRadius: 20,
             border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.8)",
             background: isLight ? "#ffffff" : "#111",
-            padding: 24,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
-            overflow: "hidden",
+            padding: "clamp(16px, 4vw, 24px)",
             boxSizing: "border-box",
           }}
         >
@@ -317,3 +306,5 @@ export const TaskRouteTask = memo(({
     </>
   );
 });
+
+export default TaskRouteTask;

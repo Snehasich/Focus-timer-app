@@ -155,7 +155,7 @@ const FocusBreak = () => {
             setCustomBreakMins(Math.round(breakInitialTime / 60));
             setShowSettings(true);
           }}
-          className="absolute top-0 right-0 p-2.5 rounded-full transition-all hover:scale-110 active:scale-95 shadow-md"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2.5 rounded-full transition-all hover:scale-110 active:scale-95 shadow-md"
           style={{
             background: isLight ? "#f1f5f9" : "#1a1a20",
             border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a34",

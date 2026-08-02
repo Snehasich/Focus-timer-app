@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 
 export const CalendarView = () => {
   const { theme } = useTheme();
@@ -39,28 +39,13 @@ export const CalendarView = () => {
   const startDay = firstDayOfMonth(year, month);
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        padding: "clamp(12px, 3vw, 24px)",
-        boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-      }}
-    >
+    <div className="min-h-screen lg:h-screen w-full box-border flex flex-col p-2 sm:p-5 md:p-6 gap-3 pb-24 lg:pb-6">
       <div
+        className="w-full flex-1 flex flex-col gap-4 rounded-3xl p-4 sm:p-6 overflow-y-auto min-h-0"
         style={{
           background: isLight ? "#ffffff" : "#111111",
           border: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
-          borderRadius: 24,
-          padding: 24,
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: 20,
           boxShadow: isLight ? "0 8px 24px rgba(15,23,42,0.03)" : "0 10px 40px rgba(0,0,0,0.4)",
-          overflowY: "auto",
         }}
       >
         {/* Header */}
@@ -90,7 +75,7 @@ export const CalendarView = () => {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <button
               onClick={prevMonth}
               style={{
@@ -153,7 +138,7 @@ export const CalendarView = () => {
                 padding: "clamp(4px, 1vw, 8px) 0",
               }}
             >
-              {day.slice(0, window.innerWidth < 480 ? 1 : 3)}
+              {day}
             </div>
           ))}
         </div>
@@ -173,7 +158,7 @@ export const CalendarView = () => {
                 style={{
                   borderRadius: "clamp(8px, 2vw, 14px)",
                   padding: "clamp(4px, 1.5vw, 10px)",
-                  minHeight: "clamp(44px, 10vw, 70px)",
+                  minHeight: "clamp(44px, 8vw, 70px)",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
@@ -197,13 +182,13 @@ export const CalendarView = () => {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontWeight: activeToday ? 800 : 600, fontSize: "clamp(0.65rem, 2vw, 0.9rem)" }}>{dayNum}</span>
                   {activeToday && (
-                    <span style={{ fontSize: "0.55rem", fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "1px 4px", borderRadius: 8, display: window.innerWidth < 400 ? "none" : "inline" }}>
+                    <span style={{ fontSize: "0.55rem", fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "1px 4px", borderRadius: 8 }}>
                       Today
                     </span>
                   )}
                 </div>
 
-                {dayNum % 3 === 0 && window.innerWidth > 380 && (
+                {dayNum % 3 === 0 && (
                   <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                     <div
                       style={{
