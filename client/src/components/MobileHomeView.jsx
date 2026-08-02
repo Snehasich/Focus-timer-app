@@ -290,34 +290,6 @@ export const MobileHomeView = ({
         </div>
       </div>
 
-      {/* ── (6) AI Insight Card ── */}
-      <div 
-        className="rounded-3xl p-5 flex flex-col gap-2.5 relative overflow-hidden"
-        style={{
-          background: isLight ? "linear-gradient(135deg, #f5f3ff, #ffffff)" : "linear-gradient(135deg, #201735, #171717)",
-          border: isLight ? "1px solid #ddd6fe" : "1px solid rgba(147, 51, 234, 0.25)",
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-extrabold text-purple-400">
-            <Lightbulb size={16} className="text-amber-400 fill-amber-400/20" />
-            <span>AI Productivity Tip</span>
-          </div>
-
-          <span 
-            onClick={() => alert("AI Coach features integrated in Notes module!")}
-            className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
-          >
-            <span>Open AI Coach</span>
-            <ArrowRight size={12} />
-          </span>
-        </div>
-
-        <p className="text-xs leading-relaxed opacity-90 font-medium" style={{ color: isLight ? "#334155" : "#cbd5e1" }}>
-          Taking a 5-minute break after 50 minutes of deep focus restores mental stamina and boosts creativity by 35%.
-        </p>
-      </div>
-
     </div>
   );
 };

@@ -655,68 +655,6 @@ export const NotesView = () => {
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* AI Actions Dropdown */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowAiMenu(!showAiMenu)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
-                      style={{
-                        background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-                        color: "#ffffff",
-                      }}
-                      title="AI Actions Suite"
-                    >
-                      <Sparkles size={14} />
-                      <span>AI Actions</span>
-                    </button>
-
-                    {showAiMenu && (
-                      <div
-                        className="absolute right-0 top-full mt-2 w-52 rounded-2xl p-1.5 shadow-2xl z-40 flex flex-col gap-1 border animate-in fade-in zoom-in-95"
-                        style={{
-                          background: isLight ? "#ffffff" : "#18181c",
-                          borderColor: isLight ? "#e2e8f0" : "#2a2a34",
-                        }}
-                      >
-                        <button
-                          onClick={handleAiSummarize}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-left w-full cursor-pointer hover:bg-purple-500/10"
-                          style={{ color: isLight ? "#334155" : "#e2e8f0" }}
-                        >
-                          <Sparkles size={13} className="text-purple-400" />
-                          <span>🪄 AI Summarize</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setActiveAiModal("explain"); setShowAiMenu(false); }}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-left w-full cursor-pointer hover:bg-blue-500/10"
-                          style={{ color: isLight ? "#334155" : "#e2e8f0" }}
-                        >
-                          <BookOpen size={13} className="text-blue-400" />
-                          <span>💡 AI Explain Note</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setActiveAiModal("quiz"); setShowAiMenu(false); setQuizAnswers({}); setQuizSubmitted(false); }}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-left w-full cursor-pointer hover:bg-emerald-500/10"
-                          style={{ color: isLight ? "#334155" : "#e2e8f0" }}
-                        >
-                          <HelpCircle size={13} className="text-emerald-400" />
-                          <span>🎯 Generate Quiz</span>
-                        </button>
-
-                        <button
-                          onClick={() => { setActiveAiModal("flashcards"); setShowAiMenu(false); setFlashcardIndex(0); setFlashcardFlipped(false); }}
-                          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-colors text-left w-full cursor-pointer hover:bg-amber-500/10"
-                          style={{ color: isLight ? "#334155" : "#e2e8f0" }}
-                        >
-                          <FileCode size={13} className="text-amber-400" />
-                          <span>🃏 Study Flashcards</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
                   {/* Impressive Import Files Button */}
                   <button
                     onClick={() => fileInputRef.current?.click()}

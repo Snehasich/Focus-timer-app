@@ -25,12 +25,14 @@ public class UserActivityController {
         return "Guest";
     }
 
-    // ── POST /activity/login — record today's login/visit ──
+    // ── POST /activity/login — record today's login/visit with optional streak sync ──
     @PostMapping("/login")
-    public ResponseEntity<?> recordLogin(Authentication authentication) {
+    public ResponseEntity<?> recordLogin(
+            @RequestParam(required = false, defaultValue = "1") int streak,
+            Authentication authentication) {
         String username = getUsername(authentication);
-        activityService.logVisit(username);
-        return ResponseEntity.ok(Map.of("message", "Login recorded"));
+        activityService.logVisit(username, streak);
+        return ResponseEntity.ok(Map.of("message", "Login recorded", "username", username));
     }
 
     // ── POST /activity/log — log a completed focus session ──
@@ -44,10 +46,10 @@ public class UserActivityController {
         int sessions = ((Number) body.getOrDefault("sessions", 0)).intValue();
 
         activityService.logFocusSession(username, focusSeconds, sessions);
-        return ResponseEntity.ok(Map.of("message", "Session logged"));
+        return ResponseEntity.ok(Map.of("message", "Session logged", "username", username));
     }
 
-    // ── GET /activity/stats — return full dashboard stats ──
+    // ── GET /activity/stats — return full dashboard stats for current user ──
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getDashboardStats(Authentication authentication) {
         String username = getUsername(authentication);

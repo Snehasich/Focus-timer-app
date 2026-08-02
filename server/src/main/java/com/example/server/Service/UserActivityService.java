@@ -22,9 +22,9 @@ public class UserActivityService {
     }
 
     // ─────────────────────────────────────────────
-    // 1. Record today's login visit (upsert)
+    // 1. Record today's login visit and sync streak days (upsert)
     // ─────────────────────────────────────────────
-    public void logVisit(String username) {
+    public void logVisit(String username, int streak) {
         LocalDate today = LocalDate.now();
         UserActivity activity = activityRepo
                 .findByUsernameAndActivityDate(username, today)
@@ -36,6 +36,27 @@ public class UserActivityService {
                 });
         activity.setLoginCount(activity.getLoginCount() + 1);
         activityRepo.save(activity);
+
+        // Ensure past streak days (up to streak count) exist in DB for this user
+        int daysToSync = Math.max(1, Math.min(streak, 365));
+        for (int i = 0; i < daysToSync; i++) {
+            LocalDate date = today.minusDays(i);
+            Optional<UserActivity> opt = activityRepo.findByUsernameAndActivityDate(username, date);
+            if (opt.isEmpty()) {
+                UserActivity past = new UserActivity();
+                past.setUsername(username);
+                past.setActivityDate(date);
+                past.setLoginCount(1);
+                past.setFocusSeconds(1800); // 30 mins focus for past streak day
+                past.setSessionCount(1);
+                activityRepo.save(past);
+            }
+        }
+    }
+
+    // Overload for default call
+    public void logVisit(String username) {
+        logVisit(username, 1);
     }
 
     // ─────────────────────────────────────────────
@@ -63,23 +84,21 @@ public class UserActivityService {
         LocalDate today = LocalDate.now();
         LocalDate yearAgo = today.minusYears(1);
 
-        // All activity in last 12 months
+        // All activity in last 12 months for this user
         List<UserActivity> allActivity = activityRepo
                 .findByUsernameAndActivityDateBetween(username, yearAgo, today);
 
         // Build a map of date → focusSeconds for quick lookup
         Map<LocalDate, Long> focusMap = allActivity.stream()
-                .collect(Collectors.toMap(UserActivity::getActivityDate, UserActivity::getFocusSeconds));
+                .collect(Collectors.toMap(UserActivity::getActivityDate, UserActivity::getFocusSeconds, (a, b) -> a));
 
         // ── Current Streak ──
         int currentStreak = 0;
         LocalDate cursor = today;
         while (true) {
             Long secs = focusMap.get(cursor);
-            // Count today even if only logged in (loginCount > 0 means active day)
             boolean active = (secs != null && secs > 0);
             if (!active) {
-                // Also count if user logged in today (loginCount > 0)
                 Optional<UserActivity> opt = activityRepo.findByUsernameAndActivityDate(username, cursor);
                 active = opt.isPresent() && opt.get().getLoginCount() > 0;
             }
@@ -103,51 +122,50 @@ public class UserActivityService {
             maxStreak = Math.max(maxStreak, tempStreak);
             prev = a.getActivityDate();
         }
+        maxStreak = Math.max(maxStreak, currentStreak);
 
         // ── Focus time today ──
         long focusSecondsToday = focusMap.getOrDefault(today, 0L);
 
-        // ── Task counts (real from DB) ──
+        // ── Task counts (real from DB for this user) ──
         List<Task> tasks = taskRepo.findByUsername(username);
         long completedTasks = tasks.stream().filter(Task::isCompleted).count();
-        long pendingTasks = tasks.stream().filter(t -> !t.isCompleted()).count();
+        long totalTasks = tasks.size();
 
         // ── Weekly data (last 7 days) ──
         List<Map<String, Object>> weeklyData = new ArrayList<>();
+        String[] dayNames = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
         for (int i = 6; i >= 0; i--) {
             LocalDate day = today.minusDays(i);
             Map<String, Object> entry = new HashMap<>();
             entry.put("date", day.toString());
-            entry.put("focusSeconds", focusMap.getOrDefault(day, 0L));
+            entry.put("dayName", dayNames[day.getDayOfWeek().getValue() % 7]);
+            long sec = focusMap.getOrDefault(day, 0L);
+            entry.put("focusMins", Math.round(sec / 60.0));
             weeklyData.add(entry);
         }
 
-        // ── Heatmap data (last 12 months, date → focusSeconds) ──
-        Map<String, Long> heatmapData = new LinkedHashMap<>();
-        for (UserActivity a : allActivity) {
-            heatmapData.put(a.getActivityDate().toString(), a.getFocusSeconds());
-        }
+        // ── Heatmap Data ──
+        List<Map<String, Object>> heatmap = allActivity.stream().map(a -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("date", a.getActivityDate().toString());
+            m.put("focusSeconds", a.getFocusSeconds());
+            m.put("sessionCount", a.getSessionCount());
+            m.put("loginCount", a.getLoginCount());
+            return m;
+        }).collect(Collectors.toList());
 
-        // ── Total active days ──
-        long totalActiveDays = allActivity.stream()
-                .filter(a -> a.getFocusSeconds() > 0 || a.getLoginCount() > 0)
-                .count();
+        Map<String, Object> result = new HashMap<>();
+        result.put("username", username);
+        result.put("currentStreak", currentStreak);
+        result.put("maxStreak", maxStreak);
+        result.put("activeDays", allSorted.size());
+        result.put("focusSecondsToday", focusSecondsToday);
+        result.put("completedTasks", completedTasks);
+        result.put("totalTasks", totalTasks);
+        result.put("weeklyData", weeklyData);
+        result.put("heatmap", heatmap);
 
-        // ── Total hours in past year ──
-        long totalSecondsYear = allActivity.stream().mapToLong(UserActivity::getFocusSeconds).sum();
-
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("currentStreak", currentStreak);
-        stats.put("maxStreak", maxStreak);
-        stats.put("focusSecondsToday", focusSecondsToday);
-        stats.put("tasksCompleted", completedTasks);
-        stats.put("tasksPending", pendingTasks);
-        stats.put("tasksTotal", tasks.size());
-        stats.put("weeklyData", weeklyData);
-        stats.put("heatmapData", heatmapData);
-        stats.put("totalActiveDays", totalActiveDays);
-        stats.put("totalHoursYear", Math.round(totalSecondsYear / 3600.0 * 10.0) / 10.0);
-
-        return stats;
+        return result;
     }
 }
