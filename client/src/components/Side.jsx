@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
-import { Timer, House, TimerReset, LayoutDashboard, LogOut, Calendar, NotebookPen, Flame } from "lucide-react";
+import { Timer, House, TimerReset, LayoutDashboard, LogOut, Calendar, NotebookPen, Flame, PanelLeftClose } from "lucide-react";
 import { useEffect, useState } from "react";
 import { logout } from "../services/authService";
 import { useTheme } from "../context/ThemeContext";
@@ -12,9 +12,6 @@ export const Side = () => {
   const location = useLocation();
   const [username, setUsername] = useState("Username");
   const [streak, setStreak] = useState(1);
-  const [greetingVisible, setGreetingVisible] = useState(false);
-  const [nameVisible, setNameVisible] = useState(false);
-  const [displayName, setDisplayName] = useState("");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { theme, sidebarOpen, toggleSidebar } = useTheme();
 
@@ -56,20 +53,6 @@ export const Side = () => {
       }
       localStorage.setItem("focusflow_last_visit", todayStr);
     }
-
-    // Animate greeting first
-    setTimeout(() => setGreetingVisible(true), 200);
-
-    // Then type out the name letter by letter
-    setTimeout(() => {
-      setNameVisible(true);
-      let i = 0;
-      const interval = setInterval(() => {
-        i++;
-        setDisplayName(stored.slice(0, i));
-        if (i >= stored.length) clearInterval(interval);
-      }, 60);
-    }, 600);
   }, []);
 
   const isLight = theme === "light";
@@ -77,15 +60,14 @@ export const Side = () => {
   const getClass = (path) => {
     const isActive = location.pathname === path;
     if (isLight) {
-      return `p-2.5 rounded-2xl flex items-center gap-2.5 transition-all duration-150 cursor-pointer w-full text-left
-      ${isActive ? "bg-blue-600 text-white shadow-sm font-semibold" : "text-gray-600 hover:bg-[#e2e8f0] hover:text-gray-900"}`;
+      return `p-2.5 rounded-2xl flex items-center gap-2.5 transition-all duration-150 cursor-pointer w-full text-left font-medium text-sm
+      ${isActive ? "bg-blue-600 text-white shadow-sm font-semibold" : "text-gray-600 hover:bg-slate-200 hover:text-gray-900"}`;
     } else {
-      return `p-2.5 rounded-2xl flex items-center gap-2.5 transition-all duration-150 cursor-pointer w-full text-left
+      return `p-2.5 rounded-2xl flex items-center gap-2.5 transition-all duration-150 cursor-pointer w-full text-left font-medium text-sm
       ${isActive ? "bg-blue-600 text-white font-semibold" : "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"}`;
     }
   };
 
-  // Auto-close sidebar on mobile when navigating
   const handleNavigate = (path) => {
     navigate(path);
     if (window.innerWidth < 1024) {
@@ -93,349 +75,146 @@ export const Side = () => {
     }
   };
 
-  // Get initials for avatar
-  const getInitials = (name) => name.charAt(0).toUpperCase();
-
   return (
-    <>
-      <style>{`
-        @keyframes fadeSlideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-        @keyframes pulse-ring {
-          0%   { box-shadow: 0 0 0 0px ${isLight ? "rgba(37,99,235,0.2)" : "rgba(96,165,250,0.35)"}; }
-          70%  { box-shadow: 0 0 0 7px ${isLight ? "rgba(37,99,235,0)" : "rgba(96,165,250,0)"}; }
-          100% { box-shadow: 0 0 0 0px ${isLight ? "rgba(37,99,235,0)" : "rgba(96,165,250,0)"}; }
-        }
-        .greeting-in  { animation: fadeSlideDown 0.5s ease forwards; }
-        .name-in      { animation: fadeSlideUp 0.45s ease forwards; }
-        .avatar-pulse { animation: pulse-ring 2.5s ease-out infinite; }
-        .cursor-blink { animation: blink 0.75s step-end infinite; }
-        .sidebar-nav::-webkit-scrollbar { width: 2px; transition: width 0.2s ease; }
-        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-nav::-webkit-scrollbar-thumb { background: ${isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}; border-radius: 4px; }
-        .sidebar-nav:hover::-webkit-scrollbar { width: 4px; }
-        .sidebar-nav:hover::-webkit-scrollbar-thumb { background: ${isLight ? "#94a3b8" : "#555555"}; }
+    <aside 
+      className={`h-screen hidden lg:flex flex-col shrink-0 transition-all duration-300 relative z-40 overflow-hidden ${
+        sidebarOpen ? "w-[211px] translate-x-0" : "w-0 -translate-x-full"
+      } ${
+        isLight ? "bg-slate-100 border-r border-slate-200" : "bg-[#0f0f0f] border-r border-[#1c1c1c]"
+      }`}
+    >
+      <div className="flex flex-col gap-3 p-4 flex-1 min-h-0 w-[211px] box-border">
+        
+        {/* ── Collapse Toggle Icon ── */}
+        <button
+          onClick={toggleSidebar}
+          className={`absolute top-3.5 right-3.5 p-1.5 rounded-md cursor-pointer transition-colors ${
+            isLight ? "text-slate-400 hover:text-slate-700 hover:bg-black/5" : "text-zinc-600 hover:text-zinc-300 hover:bg-white/5"
+          }`}
+          title="Toggle Sidebar"
+        >
+          <PanelLeftClose size={16} />
+        </button>
 
-        /* Mobile: hide sidebar and use bottom floating navbar */
-        @media (max-width: 1023px) {
-          .sidebar-responsive {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <div 
-        className="h-screen sidebar-responsive flex flex-col flex-shrink-0 transition-all duration-300"
-        style={{
-          width: sidebarOpen ? 211 : 0,
-          transform: sidebarOpen ? "translateX(0)" : "translateX(-211px)",
-          background: isLight ? "#f1f5f9" : "#0f0f0f",
-          borderRight: sidebarOpen ? (isLight ? "1px solid #e2e8f0" : "1px solid #1c1c1c") : "none",
-          overflow: "hidden",
-          position: "relative",
-          zIndex: 40,
-        }}
-      >
-        <div className="flex flex-col gap-3 p-4 flex-1 min-h-0" style={{ minWidth: 211, boxSizing: "border-box" }}>
-          
-          {/* ── Collapse Toggle Icon ── */}
-          <button
-            onClick={toggleSidebar}
-            style={{
-              position: "absolute",
-              top: 14,
-              right: 14,
-              background: "transparent",
-              border: "none",
-              color: isLight ? "#94a3b8" : "#555",
-              cursor: "pointer",
-              padding: "6px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "color 0.2s, transform 0.15s, background 0.2s",
-              borderRadius: "6px",
-            }}
-            onMouseEnter={(e) => { 
-              e.currentTarget.style.color = isLight ? "#4b5563" : "#cbd5e1";
-              e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)";
-            }}
-            onMouseLeave={(e) => { 
-              e.currentTarget.style.color = isLight ? "#94a3b8" : "#555";
-              e.currentTarget.style.background = "transparent";
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
-          </button>
-
-          {/* ── Logo Header ── */}
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            marginTop: 20,
-            marginBottom: 10,
-            flexShrink: 0,
-          }}>
-            <img 
-              src={isLight ? focusflowLogoLight : focusflowLogoDark} 
-              alt="FocusFlow Logo" 
-              style={{ 
-                width: 48, 
-                height: 48, 
-                borderRadius: 12,
-              }} 
-            />
-            <span
-              style={{
-                color: isLight ? "#111827" : "#ffffff",
-                fontSize: "1.05rem",
-                fontWeight: 800,
-                letterSpacing: "-0.5px",
-              }}
-            >
-              FocusFlow
-            </span>
-            <span
-              style={{
-                color: isLight ? "#6b7280" : "#9ca3af",
-                fontSize: "0.68rem",
-                fontWeight: 600,
-                letterSpacing: "0.2px",
-                marginTop: -4,
-              }}
-            >
-              Study • Focus • Achieve
-            </span>
-          </div>
-
-          {/* ── Nav Buttons ONLY (Scrollable with gap-4) ── */}
-          <div 
-            className="sidebar-nav flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto pr-1 py-1"
-          >
-            <button onClick={() => handleNavigate("/")} className={getClass("/")}>
-              <House size={18} /> Home
-            </button>
-
-            <button onClick={() => handleNavigate("/focusbreak")} className={getClass("/focusbreak")}>
-              <Timer size={18} /> Timer
-            </button>
-
-            <button onClick={() => handleNavigate("/stopwatch")} className={getClass("/stopwatch")}>
-              <TimerReset size={18} /> StopWatch
-            </button>
-
-            <button onClick={() => handleNavigate("/calendar")} className={getClass("/calendar")}>
-              <Calendar size={18} /> Calendar
-            </button>
-
-            <button onClick={() => handleNavigate("/notes")} className={getClass("/notes")}>
-              <NotebookPen size={18} /> Notes
-            </button>
-
-            <button onClick={() => handleNavigate("/dashboard")} className={getClass("/dashboard")}>
-              <LayoutDashboard size={18} /> Dashboard
-            </button>
-          </div>
-
-          {/* ── Streak Widget (Fixed at bottom of flex area) ── */}
-          <div style={{
-            background: isLight 
-              ? "linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(234, 88, 12, 0.04))" 
-              : "linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(234, 88, 12, 0.06))",
-            border: isLight 
-              ? "1px solid rgba(249, 115, 22, 0.2)" 
-              : "1px solid rgba(249, 115, 22, 0.25)",
-            borderRadius: 14,
-            padding: "10px 12px",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexShrink: 0,
-          }}>
-            <div style={{
-              width: 32, height: 32,
-              borderRadius: 10,
-              background: "rgba(249, 115, 22, 0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-            }}>
-              <Flame size={18} color="#f97316" />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-              <span style={{
-                fontSize: "0.82rem",
-                fontWeight: 700,
-                color: isLight ? "#9a3412" : "#fdba74",
-                letterSpacing: "-0.2px",
-                whiteSpace: "nowrap",
-              }}>
-                {streak} Day{streak > 1 ? "s" : ""} Streak!
-              </span>
-              <span style={{
-                fontSize: "0.68rem",
-                color: isLight ? "#c2410c" : "#fb923c",
-                fontWeight: 500,
-                whiteSpace: "nowrap",
-              }}>
-                Keep focusing daily
-              </span>
-            </div>
-          </div>
-
+        {/* ── Logo Header ── */}
+        <div className="flex flex-col items-center justify-center gap-1.5 mt-5 mb-2 shrink-0">
+          <img 
+            src={isLight ? focusflowLogoLight : focusflowLogoDark} 
+            alt="FocusFlow Logo" 
+            className="w-12 h-12 rounded-xl"
+          />
+          <span className={`text-base font-extrabold tracking-tight ${isLight ? "text-gray-900" : "text-white"}`}>
+            FocusFlow
+          </span>
+          <span className={`text-[11px] font-semibold tracking-wide -mt-1 ${isLight ? "text-gray-500" : "text-gray-400"}`}>
+            Study • Focus • Achieve
+          </span>
         </div>
 
-        {/* ── Logout (Fixed at bottom footer) ── */}
-        <div style={{
-          padding: "12px 16px",
-          borderTop: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.06)",
-          flexShrink: 0,
-        }}>
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              gap: 9,
-              padding: "9px 12px",
-              borderRadius: 10,
-              border: "1px solid transparent",
-              background: "transparent",
-              color: isLight ? "#6B7280" : "#555",
-              fontSize: "0.85rem",
-              fontWeight: 500,
-              cursor: "pointer",
-              transition: "background 0.2s, color 0.2s, border-color 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(239,68,68,0.08)";
-              e.currentTarget.style.color = "#f87171";
-              e.currentTarget.style.borderColor = "rgba(239,68,68,0.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = isLight ? "#6B7280" : "#555";
-              e.currentTarget.style.borderColor = "transparent";
-            }}
-          >
-            <LogOut size={16} />
-            Logout
+        {/* ── Nav Buttons ONLY ── */}
+        <div className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-1 py-1">
+          <button onClick={() => handleNavigate("/")} className={getClass("/")}>
+            <House size={18} /> Home
+          </button>
+
+          <button onClick={() => handleNavigate("/focusbreak")} className={getClass("/focusbreak")}>
+            <Timer size={18} /> Timer
+          </button>
+
+          <button onClick={() => handleNavigate("/stopwatch")} className={getClass("/stopwatch")}>
+            <TimerReset size={18} /> StopWatch
+          </button>
+
+          <button onClick={() => handleNavigate("/calendar")} className={getClass("/calendar")}>
+            <Calendar size={18} /> Calendar
+          </button>
+
+          <button onClick={() => handleNavigate("/notes")} className={getClass("/notes")}>
+            <NotebookPen size={18} /> Notes
+          </button>
+
+          <button onClick={() => handleNavigate("/dashboard")} className={getClass("/dashboard")}>
+            <LayoutDashboard size={18} /> Dashboard
           </button>
         </div>
 
-        {/* ── Logout Confirmation Modal (Portal to Full Screen Body) ── */}
-        {showLogoutConfirm && createPortal(
-          <div style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.55)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 999999,
-          }}>
-            <div style={{
-              background: isLight ? "#ffffff" : "#161616",
-              border: isLight ? "1px solid #e5e7eb" : "1px solid #2a2a2a",
-              boxShadow: isLight 
-                ? "0 10px 30px rgba(0,0,0,0.08)" 
-                : "0 20px 50px rgba(0,0,0,0.5)",
-              borderRadius: 20,
-              padding: 24,
-              width: "90%",
-              maxWidth: 360,
-              textAlign: "center",
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              animation: "fadeSlideDown 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards",
-            }}>
-              <div style={{
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                background: "rgba(239, 68, 68, 0.12)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto",
-              }}>
-                <LogOut size={20} color="#ef4444" />
-              </div>
+        {/* ── Streak Widget ── */}
+        <div className={`rounded-xl p-2.5 flex items-center gap-2.5 shrink-0 border ${
+          isLight 
+            ? "bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20 text-orange-950" 
+            : "bg-gradient-to-br from-orange-500/15 to-orange-500/5 border-orange-500/25 text-orange-200"
+        }`}>
+          <div className="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center shrink-0">
+            <Flame size={18} className="text-orange-500 fill-orange-500/20" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className={`text-xs font-bold whitespace-nowrap ${isLight ? "text-orange-900" : "text-orange-300"}`}>
+              {streak} Day{streak > 1 ? "s" : ""} Streak!
+            </span>
+            <span className={`text-[10px] font-medium whitespace-nowrap ${isLight ? "text-orange-700" : "text-orange-400"}`}>
+              Keep focusing daily
+            </span>
+          </div>
+        </div>
 
-              <div>
-                <h3 style={{
-                  margin: 0,
-                  fontSize: "1.1rem",
-                  fontWeight: 700,
-                  color: isLight ? "#111827" : "#f3f4f6",
-                }}>
-                  Log Out
-                </h3>
-                <p style={{
-                  margin: "6px 0 0",
-                  fontSize: "0.85rem",
-                  color: isLight ? "#6b7280" : "#9ca3af",
-                }}>
-                  Are you sure you want to log out of your session?
-                </p>
-              </div>
-
-              <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 4 }}>
-                <button
-                  onClick={() => setShowLogoutConfirm(false)}
-                  style={{
-                    background: isLight ? "#f1f5f9" : "rgba(255,255,255,0.04)",
-                    border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(255,255,255,0.08)",
-                    color: isLight ? "#4b5563" : "#e5e7eb",
-                    padding: "9px 20px",
-                    borderRadius: 50,
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                    outline: "none",
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmLogout}
-                  style={{
-                    background: "linear-gradient(135deg, #ef4444, #dc2626)",
-                    border: "none",
-                    color: "#ffffff",
-                    padding: "9px 20px",
-                    borderRadius: 50,
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                    outline: "none",
-                    boxShadow: "0 4px 12px rgba(239,68,68,0.3)",
-                  }}
-                >
-                  Yes, Log Out
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
       </div>
-    </>
+
+      {/* ── Logout (Fixed at bottom footer) ── */}
+      <div className={`p-3 border-t shrink-0 ${isLight ? "border-slate-200" : "border-white/5"}`}>
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+            isLight 
+              ? "text-gray-500 hover:bg-red-500/10 hover:text-red-500" 
+              : "text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
+          }`}
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
+      </div>
+
+      {/* ── Logout Confirmation Modal (Portal) ── */}
+      {showLogoutConfirm && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[99999]">
+          <div className={`p-6 rounded-2xl w-[90%] max-w-[360px] text-center flex flex-col gap-4 border shadow-2xl animate-in fade-in zoom-in-95 ${
+            isLight ? "bg-white border-slate-200 shadow-slate-900/10" : "bg-[#161616] border-[#2a2a2a] shadow-black/80"
+          }`}>
+            <div className="w-11 h-11 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+              <LogOut size={20} className="text-red-500" />
+            </div>
+
+            <div>
+              <h3 className={`text-base font-extrabold ${isLight ? "text-gray-900" : "text-slate-100"}`}>
+                Log Out
+              </h3>
+              <p className={`text-xs mt-1 ${isLight ? "text-gray-500" : "text-slate-400"}`}>
+                Are you sure you want to log out of your session?
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 justify-center mt-1">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className={`px-5 py-2 rounded-full font-semibold text-xs border cursor-pointer ${
+                  isLight 
+                    ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200" 
+                    : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmLogout}
+                className="px-5 py-2 rounded-full font-semibold text-xs bg-gradient-to-r from-red-500 to-red-600 text-white cursor-pointer hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30"
+              >
+                Yes, Log Out
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </aside>
   );
 };

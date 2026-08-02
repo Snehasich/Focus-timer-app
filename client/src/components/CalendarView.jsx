@@ -41,83 +41,56 @@ export const CalendarView = () => {
   return (
     <div className="min-h-screen lg:h-screen w-full box-border flex flex-col p-2 sm:p-5 md:p-6 gap-3 pb-24 lg:pb-6">
       <div
-        className="w-full flex-1 flex flex-col gap-4 rounded-3xl p-4 sm:p-6 overflow-y-auto min-h-0"
-        style={{
-          background: isLight ? "#ffffff" : "#111111",
-          border: isLight ? "1px solid #e5e7eb" : "1px solid #222222",
-          boxShadow: isLight ? "0 8px 24px rgba(15,23,42,0.03)" : "0 10px 40px rgba(0,0,0,0.4)",
-        }}
+        className={`w-full flex-1 flex flex-col gap-4 rounded-3xl p-4 sm:p-6 overflow-y-auto min-h-0 border shadow-2xl ${
+          isLight 
+            ? "bg-white border-slate-200 shadow-slate-200/50" 
+            : "bg-[#111111] border-[#222222] shadow-black/60"
+        }`}
       >
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-              }}
-            >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9.5 h-9.5 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
               <CalendarIcon size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0, color: isLight ? "#111827" : "#f3f4f6" }}>
+              <h2 className={`text-lg sm:text-xl font-bold tracking-tight ${isLight ? "text-gray-900" : "text-gray-100"}`}>
                 {monthNames[month]} {year}
               </h2>
-              <p style={{ fontSize: "0.78rem", color: isLight ? "#6b7280" : "#9ca3af", margin: "2px 0 0" }}>
+              <p className={`text-xs mt-0.5 ${isLight ? "text-gray-500" : "text-gray-400"}`}>
                 Schedule & Focus History
               </p>
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="flex items-center gap-1.5">
             <button
               onClick={prevMonth}
-              style={{
-                background: isLight ? "#f1f5f9" : "#1a1a1a",
-                border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
-                borderRadius: 10,
-                padding: "8px 12px",
-                color: isLight ? "#4b5563" : "#e5e7eb",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
+              className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                isLight 
+                  ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200" 
+                  : "bg-[#1a1a1a] border-[#2a2a2a] text-slate-200 hover:bg-[#252525]"
+              }`}
             >
               <ChevronLeft size={16} />
             </button>
             <button
               onClick={() => setCurrentDate(new Date())}
-              style={{
-                background: isLight ? "#f1f5f9" : "#1a1a1a",
-                border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
-                borderRadius: 10,
-                padding: "6px 14px",
-                color: isLight ? "#111827" : "#f3f4f6",
-                fontWeight: 600,
-                fontSize: "0.82rem",
-                cursor: "pointer",
-              }}
+              className={`px-3.5 py-1.5 rounded-xl border font-semibold text-xs transition-all cursor-pointer ${
+                isLight 
+                  ? "bg-slate-100 border-slate-300 text-gray-900 hover:bg-slate-200" 
+                  : "bg-[#1a1a1a] border-[#2a2a2a] text-gray-100 hover:bg-[#252525]"
+              }`}
             >
               Today
             </button>
             <button
               onClick={nextMonth}
-              style={{
-                background: isLight ? "#f1f5f9" : "#1a1a1a",
-                border: isLight ? "1px solid #cbd5e1" : "1px solid #2a2a2a",
-                borderRadius: 10,
-                padding: "8px 12px",
-                color: isLight ? "#4b5563" : "#e5e7eb",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
+              className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                isLight 
+                  ? "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200" 
+                  : "bg-[#1a1a1a] border-[#2a2a2a] text-slate-200 hover:bg-[#252525]"
+              }`}
             >
               <ChevronRight size={16} />
             </button>
@@ -125,18 +98,13 @@ export const CalendarView = () => {
         </div>
 
         {/* Days of Week */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "clamp(3px, 1.5vw, 8px)", textAlign: "center" }}>
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
           {daysOfWeek.map((day) => (
             <div
               key={day}
-              style={{
-                fontSize: "clamp(0.6rem, 1.5vw, 0.78rem)",
-                fontWeight: 700,
-                color: isLight ? "#94a3b8" : "#6b7280",
-                textTransform: "uppercase",
-                letterSpacing: "0.03em",
-                padding: "clamp(4px, 1vw, 8px) 0",
-              }}
+              className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider py-1 sm:py-2 ${
+                isLight ? "text-slate-400" : "text-zinc-500"
+              }`}
             >
               {day}
             </div>
@@ -144,9 +112,9 @@ export const CalendarView = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "clamp(3px, 1.5vw, 8px)", flex: 1 }}>
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2 flex-1">
           {[...Array(startDay)].map((_, i) => (
-            <div key={`empty-${i}`} style={{ borderRadius: 10, opacity: 0.2 }} />
+            <div key={`empty-${i}`} className="rounded-xl opacity-20" />
           ))}
 
           {[...Array(totalDays)].map((_, i) => {
@@ -155,57 +123,36 @@ export const CalendarView = () => {
             return (
               <div
                 key={dayNum}
-                style={{
-                  borderRadius: "clamp(8px, 2vw, 14px)",
-                  padding: "clamp(4px, 1.5vw, 10px)",
-                  minHeight: "clamp(44px, 8vw, 70px)",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  background: activeToday
-                    ? "linear-gradient(135deg, #3b82f6, #2563eb)"
+                className={`rounded-xl p-1.5 sm:p-2.5 min-h-[44px] sm:min-h-[64px] flex flex-col justify-between transition-all duration-150 cursor-pointer overflow-hidden ${
+                  activeToday
+                    ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 font-black"
                     : isLight
-                    ? "#f8fafc"
-                    : "#161616",
-                  border: activeToday
-                    ? "none"
-                    : isLight
-                    ? "1px solid #e2e8f0"
-                    : "1px solid #222222",
-                  color: activeToday ? "#ffffff" : isLight ? "#111827" : "#e5e7eb",
-                  boxShadow: activeToday ? "0 4px 14px rgba(59,130,246,0.3)" : "none",
-                  transition: "transform 0.15s ease",
-                  cursor: "pointer",
-                  overflow: "hidden",
-                }}
+                      ? "bg-slate-50 border border-slate-200 text-slate-900 hover:bg-slate-100"
+                      : "bg-[#161616] border border-[#222222] text-slate-200 hover:bg-[#1f1f1f]"
+                }`}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: activeToday ? 800 : 600, fontSize: "clamp(0.65rem, 2vw, 0.9rem)" }}>{dayNum}</span>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs sm:text-sm ${activeToday ? "font-black" : "font-semibold"}`}>
+                    {dayNum}
+                  </span>
                   {activeToday && (
-                    <span style={{ fontSize: "0.55rem", fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "1px 4px", borderRadius: 8 }}>
+                    <span className="text-[9px] font-extrabold bg-white/20 px-1.5 py-0.5 rounded-md text-white">
                       Today
                     </span>
                   )}
                 </div>
 
                 {dayNum % 3 === 0 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <div className="flex items-center gap-1">
                     <div
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: "50%",
-                        background: activeToday ? "#ffffff" : "#10b981",
-                        flexShrink: 0,
-                      }}
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        activeToday ? "bg-white" : "bg-emerald-500"
+                      }`}
                     />
                     <span
-                      style={{
-                        fontSize: "0.6rem",
-                        opacity: activeToday ? 0.9 : 0.6,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                      }}
+                      className={`text-[9px] font-medium truncate ${
+                        activeToday ? "text-white/90" : "opacity-60"
+                      }`}
                     >
                       Focus
                     </span>

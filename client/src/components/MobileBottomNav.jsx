@@ -59,23 +59,25 @@ export const MobileBottomNav = () => {
       {/* ── More Popover Menu (Frosted Glass) ── */}
       {showMoreMenu && (
         <div 
-          className="absolute bottom-full mb-3 right-0 w-52 rounded-2xl p-2.5 shadow-2xl border flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-200 z-50"
-          style={{
-            background: isLight ? "rgba(255, 255, 255, 0.75)" : "rgba(18, 18, 24, 0.65)",
-            backdropFilter: "blur(20px) saturate(190%)",
-            WebkitBackdropFilter: "blur(20px) saturate(190%)",
-            borderColor: isLight ? "rgba(255, 255, 255, 0.7)" : "rgba(255, 255, 255, 0.12)",
-            boxShadow: isLight ? "0 12px 36px rgba(15, 23, 42, 0.15)" : "0 14px 40px rgba(0, 0, 0, 0.7)",
-          }}
+          className={`absolute bottom-full mb-3 right-0 w-52 rounded-2xl p-2.5 shadow-2xl border flex flex-col gap-1 z-50 backdrop-blur-xl backdrop-saturate-150 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+            isLight 
+              ? "bg-white/80 border-white/80 shadow-slate-900/15" 
+              : "bg-[#121218]/80 border-white/10 shadow-black/80"
+          }`}
         >
-          <div className="flex items-center justify-between px-3 py-1.5 border-b mb-1" style={{ borderColor: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)" }}>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: isLight ? "#475569" : "#94a3b8" }}>
+          <div className={`flex items-center justify-between px-3 py-1.5 border-b mb-1 ${
+            isLight ? "border-slate-200/60" : "border-white/10"
+          }`}>
+            <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+              isLight ? "text-slate-500" : "text-slate-400"
+            }`}>
               More Options
             </span>
             <button 
               onClick={() => setShowMoreMenu(false)}
-              className="p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
-              style={{ color: isLight ? "#64748b" : "#94a3b8" }}
+              className={`p-1 rounded-md cursor-pointer transition-colors ${
+                isLight ? "hover:bg-slate-200/60 text-slate-500" : "hover:bg-white/10 text-slate-400"
+              }`}
             >
               <X size={14} />
             </button>
@@ -100,7 +102,7 @@ export const MobileBottomNav = () => {
             );
           })}
 
-          <div className="my-1 border-t" style={{ borderColor: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)" }} />
+          <div className={`my-1 border-t ${isLight ? "border-slate-200/60" : "border-white/10"}`} />
 
           {/* Theme Toggle Button */}
           <button
@@ -126,20 +128,11 @@ export const MobileBottomNav = () => {
 
       {/* ── Main Frosted Glass Floating Dock Bar ── */}
       <div
-        className="flex items-center justify-between gap-1 px-3 py-2 rounded-3xl transition-all shadow-2xl"
-        style={{
-          background: isLight 
-            ? "rgba(255, 255, 255, 0.65)" 
-            : "rgba(18, 18, 24, 0.55)",
-          backdropFilter: "blur(20px) saturate(190%)",
-          WebkitBackdropFilter: "blur(20px) saturate(190%)",
-          border: isLight 
-            ? "1px solid rgba(255, 255, 255, 0.7)" 
-            : "1px solid rgba(255, 255, 255, 0.12)",
-          boxShadow: isLight 
-            ? "0 10px 30px rgba(15, 23, 42, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.8)" 
-            : "0 12px 36px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.12)",
-        }}
+        className={`flex items-center justify-between gap-1 px-3 py-2 rounded-3xl transition-all shadow-2xl border backdrop-blur-xl backdrop-saturate-150 ${
+          isLight 
+            ? "bg-white/70 border-white/80 shadow-slate-900/12" 
+            : "bg-[#121218]/70 border-white/10 shadow-black/70"
+        }`}
       >
         {/* Primary 4 Items */}
         {primaryNavItems.map((item) => {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, Sparkles, Target, Zap, Clock, CheckCircle2, Lightbulb, RefreshCw, Circle, CircleCheck, CircleX, Play, ArrowRight, Plus, ArrowUp } from "lucide-react";
+import { Flame, Sparkles, Target, Zap, Clock, CheckCircle2, RefreshCw, Circle, CircleCheck, CircleX, Play, Plus, ArrowUp } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import FocusBreak from "./Timer/FocusBreak";
 
@@ -42,15 +42,16 @@ export const MobileHomeView = ({
       
       {/* ── (1) Greeting with streak ── */}
       <div 
-        className="rounded-3xl p-5 flex flex-col gap-2.5 relative overflow-hidden transition-all duration-200"
-        style={{
-          background: isLight ? "#ffffff" : "#171717",
-          border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: isLight ? "0 4px 20px rgba(15,23,42,0.03)" : "0 8px 30px rgba(0,0,0,0.5)",
-        }}
+        className={`rounded-3xl p-5 flex flex-col gap-2.5 relative overflow-hidden transition-all duration-200 border ${
+          isLight 
+            ? "bg-white border-slate-200 shadow-slate-200/50 shadow-sm text-slate-900" 
+            : "bg-[#171717] border-white/10 shadow-2xl shadow-black/50 text-slate-100"
+        }`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider" style={{ color: isLight ? "#2563eb" : "#60a5fa" }}>
+          <div className={`flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider ${
+            isLight ? "text-blue-600" : "text-blue-400"
+          }`}>
             <Sparkles size={13} />
             <span>FocusFlow Workstation</span>
           </div>
@@ -62,10 +63,10 @@ export const MobileHomeView = ({
         </div>
 
         <div>
-          <h1 className="text-2xl font-black tracking-tight" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+          <h1 className={`text-2xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-slate-50"}`}>
             {getGreeting()}, {username} 👋
           </h1>
-          <p className="text-xs font-medium opacity-75 mt-1" style={{ color: isLight ? "#64748b" : "#94a3b8" }}>
+          <p className={`text-xs font-medium mt-1 ${isLight ? "text-slate-500" : "text-slate-400"}`}>
             Stay focused, keep pushing, and conquer your goals today.
           </p>
         </div>
@@ -73,15 +74,16 @@ export const MobileHomeView = ({
 
       {/* ── (2) Active Task card with Resume Focus button ── */}
       <div 
-        className="rounded-3xl p-5 flex flex-col gap-3 relative overflow-hidden transition-all duration-200"
-        style={{
-          background: isLight ? "linear-gradient(135deg, #f0f7ff, #ffffff)" : "linear-gradient(135deg, #182030, #171717)",
-          border: isLight ? "1px solid #bfdbfe" : "1px solid rgba(59, 130, 246, 0.2)",
-          boxShadow: isLight ? "0 4px 16px rgba(59,130,246,0.06)" : "0 8px 24px rgba(0,0,0,0.5)",
-        }}
+        className={`rounded-3xl p-5 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 border ${
+          isLight 
+            ? "bg-gradient-to-br from-blue-50 to-white border-blue-200 shadow-blue-500/5 shadow-md" 
+            : "bg-gradient-to-br from-[#182030] to-[#171717] border-blue-500/20 shadow-2xl shadow-black/50"
+        }`}
       >
         <div className="flex items-center justify-between">
-          <span style={{ color: isLight ? "#2563eb" : "#60a5fa" }} className="uppercase text-[10px] font-extrabold tracking-wider">
+          <span className={`uppercase text-[10px] font-extrabold tracking-wider ${
+            isLight ? "text-blue-600" : "text-blue-400"
+          }`}>
             🎯 Current Focus Task
           </span>
 
@@ -94,7 +96,7 @@ export const MobileHomeView = ({
           </button>
         </div>
 
-        <h3 className="text-base font-bold truncate" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+        <h3 className={`text-base font-bold truncate ${isLight ? "text-slate-900" : "text-slate-100"}`}>
           {currentTask.text}
         </h3>
 
@@ -118,28 +120,29 @@ export const MobileHomeView = ({
 
       {/* ── (3) Large Focus Timer as the Main Hero ── */}
       <div 
-        className="rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-200"
-        style={{
-          background: isLight ? "#ffffff" : "#171717",
-          border: isLight ? "1px solid #e5e7eb" : "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: isLight ? "0 8px 24px rgba(15,23,42,0.03)" : "0 10px 40px rgba(0,0,0,0.5)",
-        }}
+        className={`rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-200 border ${
+          isLight 
+            ? "bg-white border-slate-200 shadow-slate-200/50 shadow-sm" 
+            : "bg-[#171717] border-white/10 shadow-2xl shadow-black/50"
+        }`}
       >
         <FocusBreak />
       </div>
 
-      {/* ── (4) Compact Today's Tasks Section (Up to 3 tasks with checkboxes + Add Task + View All) ── */}
+      {/* ── (4) Compact Today's Tasks Section ── */}
       <div 
-        className="rounded-3xl p-5 flex flex-col gap-3.5"
-        style={{
-          background: isLight ? "#ffffff" : "#171717",
-          border: isLight ? "1px solid #e5e7eb" : "1px solid rgba(255, 255, 255, 0.08)",
-        }}
+        className={`rounded-3xl p-5 flex flex-col gap-3.5 border ${
+          isLight 
+            ? "bg-white border-slate-200 shadow-slate-200/50 shadow-sm" 
+            : "bg-[#171717] border-white/10 shadow-2xl shadow-black/50"
+        }`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 size={16} className="text-blue-500" />
-            <h3 className="text-xs font-extrabold uppercase tracking-wider" style={{ color: isLight ? "#475569" : "#94a3b8" }}>
+            <h3 className={`text-xs font-extrabold uppercase tracking-wider ${
+              isLight ? "text-slate-500" : "text-slate-400"
+            }`}>
               Today's Tasks ({tasks.length})
             </h3>
           </div>
@@ -155,26 +158,32 @@ export const MobileHomeView = ({
         {/* Task Item List */}
         <div className="flex flex-col gap-2">
           {tasks.length === 0 ? (
-            <p className="text-xs text-center opacity-60 py-3">No tasks added for today yet.</p>
+            <p className={`text-xs text-center py-3 ${isLight ? "text-slate-400" : "text-zinc-500"}`}>
+              No tasks added for today yet.
+            </p>
           ) : (
             (showAllTasksModal ? tasks : tasks.slice(0, 3)).map((task) => (
               <div
                 key={task.id}
                 onClick={() => toggleTask && toggleTask(task)}
-                className="flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer hover:border-blue-500/40 active:scale-98"
-                style={{
-                  background: task.completed
-                    ? (isLight ? "rgba(16,185,129,0.06)" : "rgba(74,222,128,0.04)")
-                    : (isLight ? "#f8fafc" : "#1f1f22"),
-                  borderColor: isLight ? "#e2e8f0" : "rgba(255, 255, 255, 0.06)",
-                }}
+                className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer hover:border-blue-500/40 active:scale-98 ${
+                  task.completed
+                    ? isLight
+                      ? "bg-emerald-500/5 border-emerald-500/20"
+                      : "bg-emerald-400/5 border-emerald-400/15"
+                    : isLight
+                      ? "bg-slate-50 border-slate-200"
+                      : "bg-[#1f1f22] border-white/5"
+                }`}
               >
                 {task.completed ? (
-                  <CircleCheck size={18} className="text-emerald-500 flex-shrink-0" />
+                  <CircleCheck size={18} className="text-emerald-500 shrink-0" />
                 ) : (
-                  <Circle size={18} className="text-gray-400 flex-shrink-0" />
+                  <Circle size={18} className="text-gray-400 shrink-0" />
                 )}
-                <span className={`text-xs font-semibold truncate flex-1 ${task.completed ? "line-through opacity-60" : ""}`} style={{ color: isLight ? "#0f172a" : "#f1f5f9" }}>
+                <span className={`text-xs font-semibold truncate flex-1 ${
+                  task.completed ? "line-through opacity-60" : ""
+                } ${isLight ? "text-slate-900" : "text-slate-100"}`}>
                   {task.text}
                 </span>
                 
@@ -184,7 +193,7 @@ export const MobileHomeView = ({
                     e.stopPropagation();
                     if (deleteTask) deleteTask(task.id);
                   }}
-                  className="p-1 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all cursor-pointer flex-shrink-0"
+                  className="p-1 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all cursor-pointer shrink-0"
                   title="Delete Task"
                 >
                   <CircleX size={17} />
@@ -196,26 +205,25 @@ export const MobileHomeView = ({
 
         {/* + Add Task Input Field */}
         <div
-          className="flex items-center px-3 py-2 rounded-xl border mt-1"
-          style={{
-            background: isLight ? "#f8fafc" : "#121214",
-            borderColor: isLight ? "#cbd5e1" : "#2a2a30",
-          }}
+          className={`flex items-center px-3 py-2 rounded-xl border mt-1 ${
+            isLight ? "bg-slate-50 border-slate-300" : "bg-[#121214] border-[#2a2a30]"
+          }`}
         >
-          <Plus size={16} className="text-gray-400 mr-2 flex-shrink-0" />
+          <Plus size={16} className="text-gray-400 mr-2 shrink-0" />
           <input
             type="text"
             placeholder="Add a new task..."
             value={input}
             onChange={(e) => setInput && setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && handleAddTask) handleAddTask(); }}
-            className="flex-1 bg-transparent border-none outline-none text-xs font-medium"
-            style={{ color: isLight ? "#0f172a" : "#f1f5f9" }}
+            className={`flex-1 bg-transparent border-none outline-none text-xs font-medium ${
+              isLight ? "text-slate-900 placeholder:text-slate-400" : "text-slate-100 placeholder:text-zinc-500"
+            }`}
           />
           {input.trim().length > 0 && (
             <button
               onClick={() => handleAddTask && handleAddTask()}
-              className="p-1 rounded-lg bg-blue-600 text-white hover:bg-blue-500 cursor-pointer flex-shrink-0"
+              className="p-1 rounded-lg bg-blue-600 text-white hover:bg-blue-500 cursor-pointer shrink-0"
             >
               <ArrowUp size={14} />
             </button>
@@ -226,65 +234,65 @@ export const MobileHomeView = ({
       {/* ── (5) Progress Stats (2×2 Grid) ── */}
       <div className="grid grid-cols-2 gap-3">
         <div 
-          className="rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:translate-y-[-2px]"
-          style={{
-            background: isLight ? "#ffffff" : "#171717",
-            border: isLight ? "1px solid #e5e7eb" : "1px solid rgba(255, 255, 255, 0.08)",
-          }}
+          className={`rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:-translate-y-0.5 border ${
+            isLight 
+              ? "bg-white border-slate-200 shadow-slate-200/50 shadow-sm text-slate-900" 
+              : "bg-[#171717] border-white/10 shadow-2xl shadow-black/50 text-slate-100"
+          }`}
         >
           <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-blue-500">
             <Clock size={14} />
             <span>Focus Time</span>
           </div>
-          <span className="text-xl font-black tracking-tight" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+          <span className={`text-xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-slate-100"}`}>
             {(completedCount * 0.8).toFixed(1)} <span className="text-xs font-semibold opacity-70">hrs</span>
           </span>
         </div>
 
         <div 
-          className="rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:translate-y-[-2px]"
-          style={{
-            background: isLight ? "#ffffff" : "#171717",
-            border: isLight ? "1px solid #e5e7eb" : "1px solid rgba(255, 255, 255, 0.08)",
-          }}
+          className={`rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:-translate-y-0.5 border ${
+            isLight 
+              ? "bg-white border-slate-200 shadow-slate-200/50 shadow-sm text-slate-900" 
+              : "bg-[#171717] border-white/10 shadow-2xl shadow-black/50 text-slate-100"
+          }`}
         >
           <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-emerald-500">
             <Zap size={14} />
             <span>Sessions</span>
           </div>
-          <span className="text-xl font-black tracking-tight" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+          <span className={`text-xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-slate-100"}`}>
             {completedCount * 2} <span className="text-xs font-semibold opacity-70">Done</span>
           </span>
         </div>
 
         <div 
-          className="rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:translate-y-[-2px]"
-          style={{
-            background: isLight ? "#ffffff" : "#171717",
-            border: isLight ? "1px solid #e5e7eb" : "1px solid rgba(255, 255, 255, 0.08)",
-          }}
+          className={`rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:-translate-y-0.5 border ${
+            isLight 
+              ? "bg-white border-slate-200 shadow-slate-200/50 shadow-sm text-slate-900" 
+              : "bg-[#171717] border-white/10 shadow-2xl shadow-black/50 text-slate-100"
+          }`}
         >
           <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-purple-500">
             <CheckCircle2 size={14} />
             <span>Tasks Done</span>
           </div>
-          <span className="text-xl font-black tracking-tight" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+          <span className={`text-xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-slate-100"}`}>
             {completedCount} <span className="text-xs font-semibold opacity-70">/ {tasks.length}</span>
           </span>
         </div>
 
         <div 
-          className="rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:translate-y-[-2px]"
-          style={{
-            background: isLight ? "#ffffff" : "#171717",
-            border: isLight ? "1px solid #e5e7eb" : "1px solid rgba(255, 255, 255, 0.08)",
-          }}
+          className={`rounded-2xl p-4 flex flex-col gap-1.5 transition-all duration-200 hover:-translate-y-0.5 border ${
+            isLight 
+              ? "bg-white border-slate-200 shadow-slate-200/50 shadow-sm text-slate-900" 
+              : "bg-[#171717] border-white/10 shadow-2xl shadow-black/50 text-slate-100"
+          }`}
         >
           <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-500">
             <Target size={14} />
             <span>Daily Goal</span>
           </div>
-          <span className="text-xl font-black tracking-tight" style={{ color: isLight ? "#0f172a" : "#f8fafc" }}>
+          <span className={`text-xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-slate-100"}`}>
             {Math.round(progress)}%
           </span>
         </div>

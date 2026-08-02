@@ -7,114 +7,62 @@ export const InsideTask = memo(({ tasks, toggleTask, deleteTask }) => {
   const isLight = theme === "light";
 
   return (
-    <>
-      <style>{`
-        @keyframes taskSlideIn {
-          from { opacity: 0; transform: translateX(-14px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        .task-item {
-          animation: taskSlideIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
-          transition: background 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
-        }
-        .task-item:hover {
-          border-color: #3b82f6 !important;
-          background: ${isLight ? "#f8fafc" : "#161622"} !important;
-          transform: translateX(2px);
-        }
-        .toggle-btn {
-          transition: transform 0.15s ease, opacity 0.15s ease;
-        }
-        .toggle-btn:hover { transform: scale(1.12); opacity: 0.85; }
-        .delete-btn {
-          opacity: 0;
-          transition: opacity 0.15s ease, transform 0.15s ease, color 0.15s ease;
-        }
-        .task-item:hover .delete-btn {
-          opacity: 1;
-        }
-        .delete-btn:hover {
-          transform: scale(1.2);
-          color: #f87171 !important;
-        }
-      `}</style>
+    <div className="flex flex-col gap-1.5 w-full">
+      {tasks.length === 0 && (
+        <p className={`text-xs text-center mt-4 ${isLight ? "text-slate-400" : "text-zinc-600"}`}>
+          No tasks yet
+        </p>
+      )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-
-        {tasks.length === 0 && (
-          <p style={{ color: isLight ? "#9ca3af" : "#555", fontSize: "0.82rem", textAlign: "center", marginTop: 16 }}>
-            No tasks yet
-          </p>
-        )}
-
-        {tasks.map((task) => (
+      {tasks.map((task) => (
+        <div
+          key={task.id}
+          className={`group px-3 py-2.2 rounded-xl flex items-center gap-2.5 transition-all duration-150 border hover:border-blue-500 hover:translate-x-0.5 ${
+            task.completed
+              ? isLight
+                ? "bg-emerald-500/5 border-emerald-500/20"
+                : "bg-emerald-400/5 border-emerald-400/15"
+              : isLight
+                ? "bg-white border-slate-200 shadow-xs hover:bg-slate-50"
+                : "bg-[#0e0e0e] border-black/50 shadow-inner hover:bg-[#161622]"
+          }`}
+        >
+          {/* Toggle Button & Text */}
           <div
-            key={task.id}
-            className="task-item"
-            style={{
-              padding: "9px 12px",
-              borderRadius: 10,
-              background: task.completed 
-                ? (isLight ? "rgba(16,185,129,0.05)" : "rgba(74,222,128,0.03)") 
-                : (isLight ? "#ffffff" : "#0e0e0e"),
-              border: task.completed 
-                ? (isLight ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(74,222,128,0.15)") 
-                : (isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.5)"),
-              boxShadow: isLight
-                ? "none"
-                : "inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.3)",
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
+            className="flex items-center gap-2.5 flex-1 cursor-pointer transition-all duration-150 group-hover:opacity-100"
+            onClick={() => toggleTask(task)}
           >
-            {/* Toggle */}
-            <div
-              className="toggle-btn"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                flex: 1,
-                cursor: "pointer",
-              }}
-              onClick={() => toggleTask(task)}
+            {task.completed ? (
+              <CircleCheck size={16} className={isLight ? "text-emerald-500" : "text-emerald-400"} />
+            ) : (
+              <Circle size={16} className={isLight ? "text-slate-400" : "text-zinc-600"} />
+            )}
+
+            <span
+              className={`text-[13.5px] transition-colors duration-200 ${
+                task.completed
+                  ? isLight
+                    ? "line-through text-slate-400"
+                    : "line-through text-zinc-600"
+                  : isLight
+                    ? "text-gray-900"
+                    : "text-zinc-200"
+              }`}
             >
-              {task.completed ? (
-                <CircleCheck size={16} color={isLight ? "#10b981" : "#4ade80"} />
-              ) : (
-                <Circle size={16} color={isLight ? "#94a3b8" : "#444455"} />
-              )}
-
-              <span
-                style={{
-                  fontSize: "0.86rem",
-                  textDecoration: task.completed ? "line-through" : "none",
-                  color: task.completed
-                    ? (isLight ? "#94a3b8" : "#555566")
-                    : (isLight ? "#111827" : "#e0e0e8"),
-                  transition: "color 0.2s ease",
-                }}
-              >
-                {task.text}
-              </span>
-            </div>
-
-            {/* Delete */}
-            <CircleX
-              className="delete-btn"
-              size={15}
-              style={{
-                cursor: "pointer",
-                color: isLight ? "#94a3b8" : "#444455",
-              }}
-              onClick={() => deleteTask(task.id)}
-            />
-
+              {task.text}
+            </span>
           </div>
-        ))}
 
-      </div>
-    </>
+          {/* Delete Button */}
+          <CircleX
+            size={15}
+            className={`cursor-pointer opacity-0 group-hover:opacity-100 hover:scale-125 transition-all duration-150 ${
+              isLight ? "text-slate-400 hover:text-red-500" : "text-zinc-600 hover:text-red-400"
+            }`}
+            onClick={() => deleteTask(task.id)}
+          />
+        </div>
+      ))}
+    </div>
   );
 });

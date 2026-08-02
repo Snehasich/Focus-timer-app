@@ -143,46 +143,7 @@ export const TaskRouteTask = memo(({
 
   return (
     <>
-      <style>{`
-        @keyframes cardIn {
-          from { opacity: 0; transform: translateY(22px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .card-left-normal {
-          animation: cardIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
-          box-shadow: ${isLight 
-            ? "0 10px 30px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02)" 
-            : "inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.03), 0 16px 48px rgba(0, 0, 0, 0.8)"};
-          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-        }
-        .card-right-normal {
-          animation: cardIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
-          box-shadow: ${isLight 
-            ? "0 10px 30px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02)" 
-            : "inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.03), 0 16px 48px rgba(0, 0, 0, 0.8)"};
-          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-        }
-        .add-input-wrap {
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .add-input-wrap:hover {
-          border-color: #3b82f6 !important;
-        }
-        .add-input-wrap.focused {
-          border-color: #3b82f6 !important;
-          box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        }
-        .add-input-wrap input::placeholder {
-          color: ${isLight ? "#9ca3af" : "#4b5563"};
-        }
-        .submit-arrow {
-          transition: transform 0.15s ease, color 0.15s ease;
-        }
-        .submit-arrow:hover { transform: scale(1.15); color: #60a5fa; }
-        .progress-bar { transition: width 0.6s cubic-bezier(0.22,1,0.36,1); }
-      `}</style>
-
-      {/* ── MOBILE HOME VIEW (< 768px) ── */}
+      {/* ── MOBILE HOME VIEW (< 1024px) ── */}
       <MobileHomeView 
         tasks={tasks} 
         toggleTask={toggleTask} 
@@ -194,82 +155,70 @@ export const TaskRouteTask = memo(({
         progress={progress} 
       />
 
-      {/* ── DESKTOP HOME VIEW (≥ 1024px) UNTOUCHED ── */}
+      {/* ── DESKTOP HOME VIEW (≥ 1024px) ── */}
       <div className="hidden lg:flex flex-col lg:flex-row gap-4 sm:gap-6 w-full flex-1 min-h-0">
 
         {/* ── LEFT CARD — Tasks ── */}
         <div
-          className="card-left-normal w-full lg:max-w-[380px] lg:min-w-[320px] min-h-[350px] lg:h-full flex flex-col flex-shrink-0"
-          style={{
-            opacity: leftVisible ? undefined : 0,
-            borderRadius: 20,
-            border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.8)",
-            background: isLight ? "#ffffff" : "#111",
-            padding: 20,
-            gap: 12,
-            boxSizing: "border-box",
-          }}
+          className={`w-full lg:max-w-[380px] lg:min-w-[320px] min-h-[350px] lg:h-full flex flex-col flex-shrink-0 rounded-2xl p-5 gap-3 border transition-all duration-300 ${
+            leftVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          } ${
+            isLight 
+              ? "bg-white border-slate-200 shadow-slate-200/40 shadow-sm" 
+              : "bg-[#111] border-black/80 shadow-2xl shadow-black/80"
+          }`}
         >
           {/* Header */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="flex items-center justify-between">
             <div>
-              <h2 style={{ color: isLight ? "#111827" : "#f0f0f0", fontWeight: 700, fontSize: "1.1rem", margin: 0, letterSpacing: "-0.3px" }}>
+              <h2 className={`font-bold text-lg tracking-tight ${isLight ? "text-gray-900" : "text-gray-100"}`}>
                 Today
               </h2>
-              <p style={{ color: isLight ? "#6B7280" : "#8e9196", fontSize: "0.75rem", margin: "2px 0 0" }}>
+              <p className={`text-xs mt-0.5 ${isLight ? "text-gray-500" : "text-gray-400"}`}>
                 {completedCount} of {tasks.length} completed
               </p>
             </div>
             {tasks.length > 0 && (
-              <div style={{
-                display: "flex", alignItems: "center", gap: 5,
-                background: isLight ? "#f1f5f9" : "#1a1a1a",
-                border: isLight ? "1px solid #e2e8f0" : "1px solid #2a2a2a",
-                borderRadius: 20, padding: "3px 10px",
-              }}>
-                <CheckCheck size={12} color={isLight ? "#2563eb" : "#4ade80"} />
-                <span style={{ color: isLight ? "#2563eb" : "#4ade80", fontSize: "0.72rem", fontWeight: 600 }}>
-                  {Math.round(progress)}%
-                </span>
+              <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 border text-xs font-semibold ${
+                isLight ? "bg-slate-100 border-slate-200 text-blue-600" : "bg-[#1a1a1a] border-[#2a2a2a] text-emerald-400"
+              }`}>
+                <CheckCheck size={12} className={isLight ? "text-blue-600" : "text-emerald-400"} />
+                <span>{Math.round(progress)}%</span>
               </div>
             )}
           </div>
 
           {/* Progress bar */}
           {tasks.length > 0 && (
-            <div style={{ height: 3, background: isLight ? "#e5e7eb" : "#1e1e1e", borderRadius: 3, overflow: "hidden" }}>
+            <div className={`h-1 rounded-full overflow-hidden ${isLight ? "bg-slate-200" : "bg-[#1e1e1e]"}`}>
               <div
-                className="progress-bar"
-                style={{
-                  height: "100%",
-                  width: `${progress}%`,
-                  background: progress === 100
-                    ? (isLight ? "#10b981" : "#4ade80")
-                    : "linear-gradient(90deg, #3b82f6, #8b5cf6)",
-                  borderRadius: 3,
-                }}
+                className={`h-full rounded-full transition-all duration-500 ${
+                  progress === 100
+                    ? isLight ? "bg-emerald-500" : "bg-emerald-400"
+                    : "bg-gradient-to-r from-blue-500 to-purple-500"
+                }`}
+                style={{ width: `${progress}%` }}
               />
             </div>
           )}
 
           {/* Task list */}
-          <div style={{ flex: 1, overflowY: "auto" }} className="min-h-[160px]">
+          <div className="flex-1 overflow-y-auto min-h-[160px]">
             <InsideTask tasks={sortedTasks} toggleTask={toggleTask} deleteTask={deleteTask} />
           </div>
 
           {/* Add task input */}
           <div
-            className={`add-input-wrap${isFocused ? " focused" : ""}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              background: isLight ? "#f8fafc" : "#0e0e0e",
-              border: isLight ? "1px solid #e2e8f0" : "1px solid #252525",
-              borderRadius: 12,
-            }}
+            className={`flex items-center rounded-xl border transition-all duration-200 ${
+              isFocused 
+                ? "border-blue-500 ring-2 ring-blue-500/20" 
+                : isLight ? "border-slate-200 hover:border-blue-400" : "border-[#252525] hover:border-blue-500/50"
+            } ${
+              isLight ? "bg-slate-50" : "bg-[#0e0e0e]"
+            }`}
           >
             {!isFocused && (
-              <Plus size={16} style={{ marginLeft: 12, color: isLight ? "#9ca3af" : "#444", flexShrink: 0 }} />
+              <Plus size={16} className={`ml-3 shrink-0 ${isLight ? "text-slate-400" : "text-zinc-600"}`} />
             )}
             <input
               ref={inputRef}
@@ -280,20 +229,15 @@ export const TaskRouteTask = memo(({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
-              style={{
-                flex: 1,
-                padding: "11px 12px",
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                color: isLight ? "#111827" : "#e0e0e0",
-                fontSize: "0.85rem",
-              }}
+              className={`flex-1 py-2.5 px-3 bg-transparent border-none outline-none text-sm ${
+                isLight ? "text-gray-900 placeholder:text-slate-400" : "text-gray-200 placeholder:text-gray-500"
+              }`}
             />
             {isFocused && (
               <ArrowUp
-                className="submit-arrow"
-                style={{ marginRight: 12, color: isLight ? "#9ca3af" : "#555", cursor: "pointer", flexShrink: 0 }}
+                className={`mr-3 shrink-0 cursor-pointer transition-transform duration-150 hover:scale-110 ${
+                  isLight ? "text-slate-400 hover:text-blue-500" : "text-gray-500 hover:text-blue-400"
+                }`}
                 onMouseDown={(e) => { e.preventDefault(); handleAddTask(); }}
                 size={16}
               />
@@ -303,15 +247,13 @@ export const TaskRouteTask = memo(({
 
         {/* ── RIGHT CARD — Timer ── */}
         <div
-          className="card-right-normal w-full lg:flex-1 min-h-[420px] lg:h-full flex flex-col items-center justify-center relative overflow-hidden"
-          style={{
-            opacity: rightVisible ? undefined : 0,
-            borderRadius: 20,
-            border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(0,0,0,0.8)",
-            background: isLight ? "#ffffff" : "#111",
-            padding: "clamp(16px, 4vw, 24px)",
-            boxSizing: "border-box",
-          }}
+          className={`w-full lg:flex-1 min-h-[420px] lg:h-full flex flex-col items-center justify-center relative overflow-hidden rounded-2xl p-4 sm:p-6 border transition-all duration-300 ${
+            rightVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          } ${
+            isLight 
+              ? "bg-white border-slate-200 shadow-slate-200/40 shadow-sm" 
+              : "bg-[#111] border-black/80 shadow-2xl shadow-black/80"
+          }`}
         >
           <FocusBreak />
         </div>
