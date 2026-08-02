@@ -3,6 +3,7 @@ import instance from "../api/axiosInstance";
 import { Plus, ArrowUp, CheckCheck } from "lucide-react";
 import { InsideTask } from "./InsideTask";
 import FocusBreak from "./Timer/FocusBreak";
+import { MobileHomeView } from "./MobileHomeView";
 import { useTheme } from "../context/ThemeContext";
 
 export const TaskRouteTask = memo(({ 
@@ -181,7 +182,20 @@ export const TaskRouteTask = memo(({
         .progress-bar { transition: width 0.6s cubic-bezier(0.22,1,0.36,1); }
       `}</style>
 
-      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 w-full flex-1 min-h-0">
+      {/* ── MOBILE HOME VIEW (< 768px) ── */}
+      <MobileHomeView 
+        tasks={tasks} 
+        toggleTask={toggleTask} 
+        deleteTask={deleteTask}
+        input={input}
+        setInput={setInput}
+        handleAddTask={handleAddTask}
+        completedCount={completedCount} 
+        progress={progress} 
+      />
+
+      {/* ── DESKTOP HOME VIEW (≥ 1024px) UNTOUCHED ── */}
+      <div className="hidden lg:flex flex-col lg:flex-row gap-4 sm:gap-6 w-full flex-1 min-h-0">
 
         {/* ── LEFT CARD — Tasks ── */}
         <div

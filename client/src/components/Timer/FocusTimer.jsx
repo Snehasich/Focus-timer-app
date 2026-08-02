@@ -136,37 +136,42 @@ const FocusTimer = () => {
           >
             <defs>
               <linearGradient id="focusGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%"   stopColor="#3b82f6" />
+                <stop offset="0%" stopColor="#3b82f6" />
                 <stop offset="100%" stopColor="#2563eb" />
               </linearGradient>
+              <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#3b82f6" floodOpacity="0.8" />
+              </filter>
             </defs>
 
             {/* Background track */}
             <circle
               cx={CENTER} cy={CENTER} r={RADIUS}
               fill="none"
-              stroke={isLight ? "#e5e7eb" : "#1a1a2e"}
-              strokeWidth={STROKE}
+              stroke={isLight ? "#e2e8f0" : "#161c2e"}
+              strokeWidth={9}
             />
 
-            {/* Main progress arc */}
+            {/* Main progress arc with vibrant blue glow */}
             <circle
               cx={CENTER} cy={CENTER} r={RADIUS}
               fill="none"
-              stroke="url(#focusGrad)"
-              strokeWidth={STROKE}
+              stroke="#3b82f6"
+              strokeWidth={9}
               strokeLinecap="round"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={dashOffset}
               transform={`rotate(-90 ${CENTER} ${CENTER})`}
-              style={{ transition: "stroke-dashoffset 1s linear" }}
+              filter="url(#blueGlow)"
+              style={{ transition: "stroke-dashoffset 1s linear, stroke 0.3s ease" }}
             />
 
             {/* Leading dot */}
             {(isRunning || time < initialTime) && (
               <circle
-                cx={dotX} cy={dotY} r={5}
-                fill="#3b82f6"
+                cx={dotX} cy={dotY} r={6}
+                fill="#60a5fa"
+                style={{ filter: "drop-shadow(0 0 6px #3b82f6)" }}
               />
             )}
           </svg>
