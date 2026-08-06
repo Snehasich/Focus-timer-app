@@ -26,6 +26,7 @@ const PublicRoute = ({ children }) => {
 
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { TimerProvider } from "./context/TimerContext";
+import { AppProvider } from "./context/AppContext";
 import { useEffect } from "react";
 
 // 📦 Layout
@@ -113,74 +114,76 @@ const FocusBreakWrapper = () => {
 function App() {
   return (
     <ThemeProvider>
-      <TimerProvider>
-        <BrowserRouter>
-          <Routes>
+      <AppProvider>
+        <TimerProvider>
+          <BrowserRouter>
+            <Routes>
 
-          {/* Public */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            }
-          />
-
-          {/* Protected */}
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Layout />
-              </PrivateRoute>
-            }
-          >
-            {/* Home */}
+            {/* Public */}
             <Route
-              index
-              element={<TasksPage />}
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
             />
 
-            {/* Focus & Break */}
             <Route
-              path="/focusbreak"
-              element={<FocusBreakWrapper />}
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
             />
 
-            {/* Stopwatch */}
-            <Route path="stopwatch" element={
-              <div style={{ minHeight: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-                <StopWatch />
-              </div>
-            } />
+            {/* Protected */}
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <Layout />
+                </PrivateRoute>
+              }
+            >
+              {/* Home */}
+              <Route
+                index
+                element={<TasksPage />}
+              />
 
-            {/* Dashboard */}
-            <Route path="dashboard" element={
-              <div style={{ minHeight: "100vh", padding: "clamp(12px, 3vw, 24px)", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-                <Dashboard />
-              </div>
-            } />
+              {/* Focus & Break */}
+              <Route
+                path="/focusbreak"
+                element={<FocusBreakWrapper />}
+              />
 
-            {/* Calendar */}
-            <Route path="calendar" element={<CalendarView />} />
+              {/* Stopwatch */}
+              <Route path="stopwatch" element={
+                <div style={{ minHeight: "100vh", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+                  <StopWatch />
+                </div>
+              } />
 
-            {/* Notes */}
-            <Route path="notes" element={<NotesView />} />
-          </Route>
+              {/* Dashboard */}
+              <Route path="dashboard" element={
+                <div style={{ minHeight: "100vh", padding: "clamp(12px, 3vw, 24px)", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+                  <Dashboard />
+                </div>
+              } />
 
-        </Routes>
-      </BrowserRouter>
-    </TimerProvider>
+              {/* Calendar */}
+              <Route path="calendar" element={<CalendarView />} />
+
+              {/* Notes */}
+              <Route path="notes" element={<NotesView />} />
+            </Route>
+
+          </Routes>
+        </BrowserRouter>
+      </TimerProvider>
+    </AppProvider>
   </ThemeProvider>
   );
 }

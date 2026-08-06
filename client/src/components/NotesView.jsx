@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { logLogin } from "../services/activityService";
 import { 
   NotebookPen, Plus, Trash2, StickyNote, Search, 
   Paperclip, FileText, Download, X, File, Image as ImageIcon,
@@ -57,6 +58,10 @@ export const NotesView = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [tagFilter, setTagFilter] = useState("all");
   const [viewingAttachment, setViewingAttachment] = useState(null);
+
+  useEffect(() => {
+    logLogin().catch(() => {});
+  }, []);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showAiMenu, setShowAiMenu] = useState(false);
   const [newTagInput, setNewTagInput] = useState("");

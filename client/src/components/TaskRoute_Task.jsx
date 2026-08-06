@@ -1,16 +1,10 @@
 import { memo, useState, useEffect } from "react";
-import instance from "../api/axiosInstance";
 import { Plus, ArrowUp, CheckCheck } from "lucide-react";
 import { InsideTask } from "./InsideTask";
 import FocusBreak from "./Timer/FocusBreak";
 import { MobileHomeView } from "./MobileHomeView";
 import { useTheme } from "../context/ThemeContext";
-
-const DEFAULT_INITIAL_TASKS = [
-  { id: 101, text: "Complete 50-minute Pomodoro focus session", completed: false },
-  { id: 102, text: "Review daily study & project goals", completed: true },
-  { id: 103, text: "Organize notes and schedule events", completed: false }
-];
+import { useApp } from "../context/AppContext";
 
 export const TaskRouteTask = memo(({ 
   filter = "All Tasks", 
@@ -20,146 +14,20 @@ export const TaskRouteTask = memo(({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [input, setInput] = useState("");
-  const [tasks, setTasks] = useState(() => {
-    try {
-      const saved = localStorage.getItem("focusflow_tasks");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return DEFAULT_INITIAL_TASKS;
-  });
-
-  const saveTasks = (newTasks) => {
-    setTasks(newTasks);
-    try {
-      localStorage.setItem("focusflow_tasks", JSON.stringify(newTasks));
-    } catch (e) {}
-  };
-
-  const fetchTasks = () => {
-    instance.get("/tasks")
-      .then((res) => {
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          saveTasks(res.data);
-        } else {
-          // If server returns empty list [], check if we have local storage tasks
-          const localSaved = localStorage.getItem("focusflow_tasks");
-          let localTasks = [];
-          try {
-            localTasks = localSaved ? JSON.parse(localSaved) : [];
-          } catch (e) {}
-
-          if (localTasks.length > 0) {
-            setTasks(localTasks);
-            localTasks.forEach((t) => {
-              instance.post("/tasks", { text: t.text, completed: t.completed }).catch(() => {});
-            });
-          } else {
-            saveTasks(DEFAULT_INITIAL_TASKS);
-            DEFAULT_INITIAL_TASKS.forEach((t) => {
-              instance.post("/tasks", { text: t.text, completed: t.completed }).catch(() => {});
-            });
-          }
-        }
-      })
-      .catch((err) => {
-        console.error("Fetch error:", err);
-        try {
-          const saved = localStorage.getItem("focusflow_tasks");
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setTasks(parsed);
-            }
-          }
-        } catch (e) {}
-      });
-  };
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  const { tasks, addTask, toggleTask, deleteTask, executeBulkAction } = useApp();
 
   // ── Execute Bulk Actions ──
   useEffect(() => {
     if (!bulkAction) return;
-
-    if (bulkAction === "Reset All Tasks") {
-      const deletePromises = tasks.map((task) => instance.delete(`/tasks/${task.id}`));
-      saveTasks([]);
-      Promise.all(deletePromises)
-        .then(() => {
-          fetchTasks();
-          if (onBulkActionProcessed) onBulkActionProcessed();
-        })
-        .catch((err) => console.error("Bulk delete error:", err));
-    } else if (bulkAction === "Mark All Completed") {
-      const updated = tasks.map((t) => ({ ...t, completed: true }));
-      saveTasks(updated);
-      const updatePromises = tasks
-        .filter((t) => !t.completed)
-        .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: true }));
-      Promise.all(updatePromises)
-        .then(() => {
-          fetchTasks();
-          if (onBulkActionProcessed) onBulkActionProcessed();
-        })
-        .catch((err) => console.error("Bulk complete error:", err));
-    } else if (bulkAction === "Mark All Active") {
-      const updated = tasks.map((t) => ({ ...t, completed: false }));
-      saveTasks(updated);
-      const updatePromises = tasks
-        .filter((t) => t.completed)
-        .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: false }));
-      Promise.all(updatePromises)
-        .then(() => {
-          fetchTasks();
-          if (onBulkActionProcessed) onBulkActionProcessed();
-        })
-        .catch((err) => console.error("Bulk active error:", err));
-    }
+    executeBulkAction(bulkAction).then(() => {
+      if (onBulkActionProcessed) onBulkActionProcessed();
+    });
   }, [bulkAction]);
 
   const handleAddTask = () => {
-    if (input.trim() === "") return;
-    const newTaskText = input.trim();
+    if (!input || input.trim() === "") return;
+    addTask(input.trim());
     setInput("");
-
-    const tempId = Date.now();
-    const tempTask = { id: tempId, text: newTaskText, completed: false };
-    const updatedTasks = [...tasks, tempTask];
-    saveTasks(updatedTasks);
-
-    instance.post("/tasks", { text: newTaskText, completed: false })
-      .then((res) => {
-        if (res.data && res.data.id) {
-          const synced = updatedTasks.map((t) => (t.id === tempId ? res.data : t));
-          saveTasks(synced);
-        }
-      })
-      .catch((err) => {
-        console.error("Add error:", err);
-      });
-  };
-
-  const toggleTask = (task) => {
-    const updated = tasks.map((t) => (t.id === task.id ? { ...t, completed: !t.completed } : t));
-    saveTasks(updated);
-    instance.put(`/tasks/${task.id}`, { ...task, completed: !task.completed })
-      .catch((err) => {
-        console.error("Toggle error:", err);
-      });
-  };
-
-  const deleteTask = (id) => {
-    const updated = tasks.filter((t) => t.id !== id);
-    saveTasks(updated);
-    instance.delete(`/tasks/${id}`)
-      .catch((err) => {
-        console.error("Delete error:", err);
-      });
   };
 
   const completedCount = tasks.filter((t) => t.completed).length;
@@ -171,7 +39,7 @@ export const TaskRouteTask = memo(({
   const filteredTasks = tasks.filter((task) => {
     if (filter === "Active Only") return !task.completed;
     if (filter === "Completed Only") return task.completed;
-    return true; // "All Tasks"
+    return true;
   });
 
   // ── SORT TASKS ──
@@ -192,7 +60,7 @@ export const TaskRouteTask = memo(({
       if (a.completed && !b.completed) return 1;
       return 0;
     }
-    return 0; // "Default"
+    return 0;
   });
 
   return (

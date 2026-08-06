@@ -8,18 +8,18 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useTimer } from "../context/TimerContext";
-import { getDashboardStats, logFocusSession } from "../services/activityService";
+import { useApp } from "../context/AppContext";
+import { logFocusSession } from "../services/activityService";
 
 export default function Dashboard() {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const { focusLoop, focusTime, focusInitialTime, isFocusRunning } = useTimer();
+  const { tasks, stats, statsLoading, refreshStats } = useApp();
   const isLight = theme === "light";
 
-  const [stats, setStats]           = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
-  const [backendOnline, setBackendOnline] = useState(null); // null = checking
+  const loading = statsLoading;
+  const backendOnline = Boolean(stats);
   const [username, setUsername]     = useState("User");
   const [activeTab, setActiveTab]   = useState("thisWeek");
   const [hoveredDay, setHoveredDay] = useState(null);
@@ -27,42 +27,25 @@ export default function Dashboard() {
 
   const prevFocusLoopRef = useRef(focusLoop);
 
-  // ── Fetch stats & check backend ──
-  const fetchStats = useCallback(async () => {
-    try {
-      setError(null);
-      const data = await getDashboardStats();
-      setStats(data);
-      setBackendOnline(true);
-    } catch (err) {
-      const status = err?.response?.status;
-      // 401/403 = backend alive but token invalid
-      if (status === 401 || status === 403) {
-        setBackendOnline(true);
-        setError("Session expired. Please re-login.");
-      } else {
-        // Any other error = backend unreachable; banner already covers the message
-        setBackendOnline(false);
-        setError(null); // no duplicate message
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     setUsername(localStorage.getItem("username") || "User");
-    fetchStats();
-  }, [fetchStats]);
+    refreshStats();
+  }, [refreshStats]);
 
   // Auto-log when a focus session completes
   useEffect(() => {
     if (focusLoop > prevFocusLoopRef.current) {
       const diff = focusLoop - prevFocusLoopRef.current;
-      logFocusSession(diff * 50 * 60, diff).then(fetchStats);
+      logFocusSession(diff * 50 * 60, diff).then(refreshStats);
     }
     prevFocusLoopRef.current = focusLoop;
-  }, [focusLoop, fetchStats]);
+  }, [focusLoop, refreshStats]);
+
+  // ── Real-Time Task Counters ──
+  const completedTasksCount = useMemo(() => (tasks || []).filter((t) => t.completed).length, [tasks]);
+  const totalTasksCount = useMemo(() => (tasks || []).length, [tasks]);
+  const pendingTasksCount = useMemo(() => totalTasksCount - completedTasksCount, [totalTasksCount, completedTasksCount]);
+  const taskPct = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
 
   // ── Live focus seconds today ──
   const liveFocusSecondsToday = useMemo(() => {
@@ -104,6 +87,14 @@ export default function Dashboard() {
 
   // ── Local Streak fallback & Heatmap Map ──
   const localStreak = useMemo(() => parseInt(localStorage.getItem("focusflow_streak") || "4", 10), []);
+  const currentStreakVal = Math.max(stats?.currentStreak || 0, localStreak, 1);
+
+  // ── Real-Time Dynamic XP & Level Calculation ──
+  const totalFocusMins = Math.floor(liveFocusSecondsToday / 60);
+  const userXP = (totalFocusMins * 10) + (completedTasksCount * 50) + (currentStreakVal * 100);
+  const userLevel = Math.floor(userXP / 500) + 1;
+  const currentLevelXP = userXP % 500;
+  const xpPct = Math.min(100, Math.round((currentLevelXP / 500) * 100));
 
   const heatmapMap = useMemo(() => {
     const map = {};
@@ -232,12 +223,12 @@ export default function Dashboard() {
   };
 
   const badges = [
-    { title: "7-Day Streak", desc: "Reach a 7-day focus streak", icon: "🔥", unlocked: (stats?.currentStreak || 0) >= 7 },
-    { title: "10 Tasks Completed", desc: "Finish 10 total tasks", icon: "🏆", unlocked: (stats?.tasksCompleted || 0) >= 10 },
-    { title: "Early Bird", desc: "Log focus session before 9 AM", icon: "🌅", unlocked: true },
+    { title: "7-Day Streak", desc: "Reach a 7-day focus streak", icon: "🔥", unlocked: currentStreakVal >= 7 },
+    { title: "10 Tasks Completed", desc: "Finish 10 total tasks", icon: "🏆", unlocked: completedTasksCount >= 10 },
+    { title: "Early Bird", desc: "Log focus session before 9 AM", icon: "🌅", unlocked: new Date().getHours() < 12 },
     { title: "4-Hour Focus Day", desc: "Complete 4 hours in a single day", icon: "⚡", unlocked: liveFocusSecondsToday >= 4 * 3600 },
-    { title: "Focus Apprentice", desc: "Log your first pomodoro", icon: "🎯", unlocked: (stats?.totalActiveDays || 0) >= 1 },
-    { title: "Consistency Master", desc: "Log active focus for 30 days", icon: "👑", unlocked: (stats?.totalActiveDays || 0) >= 30 },
+    { title: "Focus Apprentice", desc: "Log your first pomodoro", icon: "🎯", unlocked: (stats?.totalActiveDays || stats?.activeDays || localStreak) >= 1 },
+    { title: "Consistency Master", desc: "Log active focus for 30 days", icon: "👑", unlocked: (stats?.totalActiveDays || stats?.activeDays || localStreak) >= 30 },
   ];
 
   // ── Skeleton pill ──
@@ -245,8 +236,6 @@ export default function Dashboard() {
     <div style={{ width: w, height: h, borderRadius: 6, background: isLight ? "#e2e8f0" : "#27272a",
       animation: "skpulse 1.5s ease infinite" }} />
   );
-
-  const taskPct = stats?.tasksTotal ? Math.round((stats.tasksCompleted / stats.tasksTotal) * 100) : 0;
 
   return (
     <>
@@ -405,7 +394,7 @@ export default function Dashboard() {
             },
             {
               label: "Tasks Done", icon: <CheckCircle2 size={15} className="text-emerald-500" />, iconBg: "rgba(16,185,129,.12)",
-              value: loading ? null : `${stats?.tasksCompleted ?? 0} / ${stats?.tasksTotal ?? 0}`,
+              value: loading ? null : `${completedTasksCount} / ${totalTasksCount}`,
               sub: <span className="text-emerald-500">{taskPct}% completion</span>,
             },
             {
@@ -615,9 +604,9 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-3 gap-1.5 text-center">
               {[
-                { l: "Pending", v: stats?.tasksPending ?? 0, c: "#f59e0b" },
-                { l: "Done",    v: stats?.tasksCompleted ?? 0, c: "#10b981" },
-                { l: "Total",   v: stats?.tasksTotal ?? 0,  c: "#3b82f6" },
+                { l: "Pending", v: pendingTasksCount, c: "#f59e0b" },
+                { l: "Done",    v: completedTasksCount, c: "#10b981" },
+                { l: "Total",   v: totalTasksCount,  c: "#3b82f6" },
               ].map(({ l, v, c }) => (
                 <div key={l} className="p-2 rounded-xl" style={{ background: isLight ? "#f8fafc" : "#19191d" }}>
                   <span className="block text-xs font-black" style={{ color: c }}>{loading ? "—" : v}</span>
@@ -639,17 +628,17 @@ export default function Dashboard() {
                 Achievements &amp; Milestones
               </h3>
               <span className="px-3 py-1 rounded-full text-xs font-bold"
-                style={{ background: "rgba(234,179,8,0.12)", color: "#eab308" }}>Level 5</span>
+                style={{ background: "rgba(234,179,8,0.12)", color: "#eab308" }}>Level {userLevel}</span>
             </div>
 
             {/* XP progress */}
             <div className="p-4 rounded-xl" style={{ background: isLight ? "#f8fafc" : "#19191d" }}>
               <div className="flex justify-between text-xs font-bold mb-2">
-                <span>Deep Work Master</span>
-                <span className="text-yellow-500">2,450 / 3,000 XP</span>
+                <span>FocusFlow Mastery ({userXP.toLocaleString()} XP)</span>
+                <span className="text-yellow-500">{currentLevelXP} / 500 XP</span>
               </div>
               <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isLight ? "#e2e8f0" : "#27272a" }}>
-                <div style={{ width: "81%", height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#f59e0b,#eab308)" }} />
+                <div style={{ width: `${xpPct}%`, height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#f59e0b,#eab308)", transition: "width .7s ease" }} />
               </div>
             </div>
 

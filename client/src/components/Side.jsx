@@ -7,13 +7,18 @@ import { useTheme } from "../context/ThemeContext";
 import focusflowLogoDark from "../assets/focusflow-logo-dark.png";
 import focusflowLogoLight from "../assets/focusflow-logo-light.png";
 
+import { useApp } from "../context/AppContext";
+
 export const Side = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { stats } = useApp();
   const [username, setUsername] = useState("Username");
-  const [streak, setStreak] = useState(1);
+  const [localStreak, setLocalStreak] = useState(1);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { theme, sidebarOpen, toggleSidebar } = useTheme();
+
+  const streak = Math.max(stats?.currentStreak || 0, localStreak, 1);
 
   const handleConfirmLogout = () => {
     logout();
@@ -24,7 +29,6 @@ export const Side = () => {
     const stored = localStorage.getItem("username") || "Username";
     setUsername(stored);
 
-    // ── Dynamic Real Daily Streak Calculation ──
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
@@ -32,11 +36,11 @@ export const Side = () => {
     const storedStreak = parseInt(localStorage.getItem("focusflow_streak") || "0", 10);
 
     if (!lastVisit) {
-      setStreak(1);
+      setLocalStreak(1);
       localStorage.setItem("focusflow_streak", "1");
       localStorage.setItem("focusflow_last_visit", todayStr);
     } else if (lastVisit === todayStr) {
-      setStreak(storedStreak > 0 ? storedStreak : 1);
+      setLocalStreak(storedStreak > 0 ? storedStreak : 1);
     } else {
       const lastDate = new Date(lastVisit);
       const todayDate = new Date(todayStr);
@@ -45,10 +49,10 @@ export const Side = () => {
 
       if (diffDays === 1) {
         const newStreak = (storedStreak > 0 ? storedStreak : 0) + 1;
-        setStreak(newStreak);
+        setLocalStreak(newStreak);
         localStorage.setItem("focusflow_streak", String(newStreak));
       } else {
-        setStreak(1);
+        setLocalStreak(1);
         localStorage.setItem("focusflow_streak", "1");
       }
       localStorage.setItem("focusflow_last_visit", todayStr);

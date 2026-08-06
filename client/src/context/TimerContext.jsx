@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { logFocusSession } from "../services/activityService";
 
 const TimerContext = createContext();
 
@@ -8,9 +9,18 @@ export const TimerProvider = ({ children }) => {
     const saved = localStorage.getItem("app_focus_initial_time");
     return saved ? parseInt(saved, 10) : 50 * 60;
   });
-  const [focusTime, setFocusTime] = useState(focusInitialTime);
-  const [isFocusRunning, setIsFocusRunning] = useState(false);
-  const [focusStartedAt, setFocusStartedAt] = useState(null);
+  const [focusTime, setFocusTime] = useState(() => {
+    const saved = localStorage.getItem("app_focus_current_time");
+    return saved ? parseInt(saved, 10) : focusInitialTime;
+  });
+  const [isFocusRunning, setIsFocusRunning] = useState(() => {
+    const saved = localStorage.getItem("app_is_focus_running");
+    return saved === "true";
+  });
+  const [focusStartedAt, setFocusStartedAt] = useState(() => {
+    const saved = localStorage.getItem("app_focus_started_at");
+    return saved ? parseInt(saved, 10) : null;
+  });
   const [focusLoop, setFocusLoop] = useState(0);
 
   // ── Break Timer State ──
@@ -18,10 +28,48 @@ export const TimerProvider = ({ children }) => {
     const saved = localStorage.getItem("app_break_initial_time");
     return saved ? parseInt(saved, 10) : 10 * 60;
   });
-  const [breakTime, setBreakTime] = useState(breakInitialTime);
-  const [isBreakRunning, setIsBreakRunning] = useState(false);
-  const [breakStartedAt, setBreakStartedAt] = useState(null);
+  const [breakTime, setBreakTime] = useState(() => {
+    const saved = localStorage.getItem("app_break_current_time");
+    return saved ? parseInt(saved, 10) : breakInitialTime;
+  });
+  const [isBreakRunning, setIsBreakRunning] = useState(() => {
+    const saved = localStorage.getItem("app_is_break_running");
+    return saved === "true";
+  });
+  const [breakStartedAt, setBreakStartedAt] = useState(() => {
+    const saved = localStorage.getItem("app_break_started_at");
+    return saved ? parseInt(saved, 10) : null;
+  });
   const [breakLoop, setBreakLoop] = useState(0);
+
+  // ── StopWatch State ──
+  const [isStopWatchRunning, setIsStopWatchRunning] = useState(false);
+  const [stopWatchStartTime, setStopWatchStartTime] = useState(null);
+  const [stopWatchPausedTime, setStopWatchPausedTime] = useState(0);
+  const [stopWatchLaps, setStopWatchLaps] = useState([]);
+  const [stopWatchTime, setStopWatchTime] = useState(0);
+
+  const alarmRef = useRef(null);
+
+  useEffect(() => {
+    alarmRef.current = new Audio("/alarm.mp3");
+  }, []);
+
+  // ── Sync Focus Timer State to LocalStorage ──
+  useEffect(() => {
+    localStorage.setItem("app_is_focus_running", isFocusRunning);
+    if (focusStartedAt) localStorage.setItem("app_focus_started_at", focusStartedAt);
+    else localStorage.removeItem("app_focus_started_at");
+    localStorage.setItem("app_focus_current_time", focusTime);
+  }, [isFocusRunning, focusStartedAt, focusTime]);
+
+  // ── Sync Break Timer State to LocalStorage ──
+  useEffect(() => {
+    localStorage.setItem("app_is_break_running", isBreakRunning);
+    if (breakStartedAt) localStorage.setItem("app_break_started_at", breakStartedAt);
+    else localStorage.removeItem("app_break_started_at");
+    localStorage.setItem("app_break_current_time", breakTime);
+  }, [isBreakRunning, breakStartedAt, breakTime]);
 
   const setFocusInitialTime = (seconds) => {
     const validSecs = Math.max(60, Math.min(180 * 60, seconds));
@@ -41,19 +89,6 @@ export const TimerProvider = ({ children }) => {
     setBreakStartedAt(null);
   };
 
-  // ── StopWatch State ──
-  const [isStopWatchRunning, setIsStopWatchRunning] = useState(false);
-  const [stopWatchStartTime, setStopWatchStartTime] = useState(null);
-  const [stopWatchPausedTime, setStopWatchPausedTime] = useState(0);
-  const [stopWatchLaps, setStopWatchLaps] = useState([]);
-  const [stopWatchTime, setStopWatchTime] = useState(0); // Current displayed time
-
-  const alarmRef = useRef(null);
-
-  useEffect(() => {
-    alarmRef.current = new Audio("/alarm.mp3");
-  }, []);
-
   // ── Focus Timer Ticker ──
   useEffect(() => {
     let interval = null;
@@ -68,13 +103,15 @@ export const TimerProvider = ({ children }) => {
           setFocusLoop((p) => p + 1);
           setFocusTime(focusInitialTime);
           setFocusStartedAt(null);
+          // Log session to backend
+          logFocusSession(focusInitialTime, 1).catch(() => {});
         } else {
           setFocusTime(newTime);
         }
-      }, 100); // Check more frequently than 1s to prevent delays
+      }, 100);
     }
     return () => clearInterval(interval);
-  }, [isFocusRunning, focusStartedAt]);
+  }, [isFocusRunning, focusStartedAt, focusInitialTime]);
 
   // ── Break Timer Ticker ──
   useEffect(() => {
@@ -96,7 +133,7 @@ export const TimerProvider = ({ children }) => {
       }, 100);
     }
     return () => clearInterval(interval);
-  }, [isBreakRunning, breakStartedAt]);
+  }, [isBreakRunning, breakStartedAt, breakInitialTime]);
 
   // ── Stopwatch Ticker ──
   useEffect(() => {
@@ -105,7 +142,7 @@ export const TimerProvider = ({ children }) => {
       interval = setInterval(() => {
         const elapsed = Date.now() - stopWatchStartTime + stopWatchPausedTime;
         setStopWatchTime(elapsed);
-      }, 100); // Tick every 100ms for background updates, StopWatch component will run requestAnimationFrame for high frequency
+      }, 100);
     }
     return () => clearInterval(interval);
   }, [isStopWatchRunning, stopWatchStartTime, stopWatchPausedTime]);
@@ -152,10 +189,4 @@ export const TimerProvider = ({ children }) => {
   );
 };
 
-export const useTimer = () => {
-  const context = useContext(TimerContext);
-  if (!context) {
-    throw new Error("useTimer must be used within a TimerProvider");
-  }
-  return context;
-};
+export const useTimer = () => useContext(TimerContext);
