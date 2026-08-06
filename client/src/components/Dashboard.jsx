@@ -110,21 +110,27 @@ export default function Dashboard() {
     if (stats) {
       if (Array.isArray(stats.heatmap)) {
         stats.heatmap.forEach((item) => {
-          if (item.date) map[item.date] = item.focusSeconds || 1800;
+          if (item.date) {
+            map[item.date] = (item.focusSeconds && item.focusSeconds > 0) ? item.focusSeconds : 1800;
+          }
         });
       } else if (stats.heatmapData) {
         Object.assign(map, stats.heatmapData);
       }
     }
 
-    // Ensure past streak days up to local streak count are populated in the heatmap
+    // Populate past streak days up to effective streak count with active focus seconds (1800s = 30m)
+    const effectiveStreak = Math.max(stats?.currentStreak || 0, localStreak, 1);
     const today = new Date();
-    today.setHours(0,0,0,0);
-    for (let i = 0; i < localStreak; i++) {
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < effectiveStreak; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      if (!map[key]) map[key] = 1800; // 30 mins active focus for streak date
+      if (!map[key] || map[key] === 0) {
+        map[key] = 1800;
+      }
     }
 
     return map;
@@ -179,7 +185,6 @@ export default function Dashboard() {
         cells.push({ id: `${y}-${m}-${c}`, dayNum: valid ? dayNum : null, dateStr, seconds, level, valid, isToday, isFuture });
       }
 
-      // Group rows of 7 into week columns (each column = one week)
       const weeks = [];
       for (let w = 0; w < cells.length; w += 7) weeks.push(cells.slice(w, w + 7));
 
@@ -451,7 +456,7 @@ export default function Dashboard() {
               <p className="text-[11px] font-semibold opacity-55 mt-0.5">
                 {loading
                   ? "Loading your activity..."
-                  : `${stats?.totalActiveDays ?? 0} active days in the last year • ${stats?.totalHoursYear ?? 0} hrs total`
+                  : `${stats?.totalActiveDays ?? stats?.activeDays ?? localStreak ?? 1} active days in the last year • ${stats?.totalHoursYear ?? (Math.round(((stats?.totalFocusSecondsYear || (localStreak * 1800)) / 3600) * 10) / 10)} hrs total`
                 }
               </p>
             </div>

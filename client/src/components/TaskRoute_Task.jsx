@@ -1,10 +1,16 @@
-import { memo, useState, useEffect, useRef } from "react";
+import { memo, useState, useEffect } from "react";
 import instance from "../api/axiosInstance";
 import { Plus, ArrowUp, CheckCheck } from "lucide-react";
 import { InsideTask } from "./InsideTask";
 import FocusBreak from "./Timer/FocusBreak";
 import { MobileHomeView } from "./MobileHomeView";
 import { useTheme } from "../context/ThemeContext";
+
+const DEFAULT_INITIAL_TASKS = [
+  { id: 101, text: "Complete 50-minute Pomodoro focus session", completed: false },
+  { id: 102, text: "Review daily study & project goals", completed: true },
+  { id: 103, text: "Organize notes and schedule events", completed: false }
+];
 
 export const TaskRouteTask = memo(({ 
   filter = "All Tasks", 
@@ -14,22 +20,66 @@ export const TaskRouteTask = memo(({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [input, setInput] = useState("");
-  const [tasks, setTasks] = useState([]);
-  const [leftVisible, setLeftVisible]   = useState(false);
-  const [rightVisible, setRightVisible] = useState(false);
-  const inputRef = useRef(null);
-  const { theme } = useTheme();
+  const [tasks, setTasks] = useState(() => {
+    try {
+      const saved = localStorage.getItem("focusflow_tasks");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_INITIAL_TASKS;
+  });
+
+  const saveTasks = (newTasks) => {
+    setTasks(newTasks);
+    try {
+      localStorage.setItem("focusflow_tasks", JSON.stringify(newTasks));
+    } catch (e) {}
+  };
 
   const fetchTasks = () => {
     instance.get("/tasks")
-      .then((res) => setTasks(res.data))
-      .catch((err) => console.error("Fetch error:", err));
+      .then((res) => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          saveTasks(res.data);
+        } else {
+          // If server returns empty list [], check if we have local storage tasks
+          const localSaved = localStorage.getItem("focusflow_tasks");
+          let localTasks = [];
+          try {
+            localTasks = localSaved ? JSON.parse(localSaved) : [];
+          } catch (e) {}
+
+          if (localTasks.length > 0) {
+            setTasks(localTasks);
+            localTasks.forEach((t) => {
+              instance.post("/tasks", { text: t.text, completed: t.completed }).catch(() => {});
+            });
+          } else {
+            saveTasks(DEFAULT_INITIAL_TASKS);
+            DEFAULT_INITIAL_TASKS.forEach((t) => {
+              instance.post("/tasks", { text: t.text, completed: t.completed }).catch(() => {});
+            });
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        try {
+          const saved = localStorage.getItem("focusflow_tasks");
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setTasks(parsed);
+            }
+          }
+        } catch (e) {}
+      });
   };
 
   useEffect(() => {
     fetchTasks();
-    setTimeout(() => setLeftVisible(true),  150);
-    setTimeout(() => setRightVisible(true), 280);
   }, []);
 
   // ── Execute Bulk Actions ──
@@ -38,79 +88,83 @@ export const TaskRouteTask = memo(({
 
     if (bulkAction === "Reset All Tasks") {
       const deletePromises = tasks.map((task) => instance.delete(`/tasks/${task.id}`));
+      saveTasks([]);
       Promise.all(deletePromises)
         .then(() => {
           fetchTasks();
-          onBulkActionProcessed();
+          if (onBulkActionProcessed) onBulkActionProcessed();
         })
         .catch((err) => console.error("Bulk delete error:", err));
     } else if (bulkAction === "Mark All Completed") {
+      const updated = tasks.map((t) => ({ ...t, completed: true }));
+      saveTasks(updated);
       const updatePromises = tasks
         .filter((t) => !t.completed)
         .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: true }));
       Promise.all(updatePromises)
         .then(() => {
           fetchTasks();
-          onBulkActionProcessed();
+          if (onBulkActionProcessed) onBulkActionProcessed();
         })
         .catch((err) => console.error("Bulk complete error:", err));
     } else if (bulkAction === "Mark All Active") {
+      const updated = tasks.map((t) => ({ ...t, completed: false }));
+      saveTasks(updated);
       const updatePromises = tasks
         .filter((t) => t.completed)
         .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: false }));
       Promise.all(updatePromises)
         .then(() => {
           fetchTasks();
-          onBulkActionProcessed();
+          if (onBulkActionProcessed) onBulkActionProcessed();
         })
         .catch((err) => console.error("Bulk active error:", err));
     }
-  }, [bulkAction, tasks]);
+  }, [bulkAction]);
 
   const handleAddTask = () => {
     if (input.trim() === "") return;
     const newTaskText = input.trim();
     setInput("");
 
-    // Optimistic UI addition: display task instantly
     const tempId = Date.now();
     const tempTask = { id: tempId, text: newTaskText, completed: false };
-    setTasks((prev) => [...prev, tempTask]);
+    const updatedTasks = [...tasks, tempTask];
+    saveTasks(updatedTasks);
 
     instance.post("/tasks", { text: newTaskText, completed: false })
       .then((res) => {
         if (res.data && res.data.id) {
-          setTasks((prev) => prev.map((t) => (t.id === tempId ? res.data : t)));
-        } else {
-          fetchTasks();
+          const synced = updatedTasks.map((t) => (t.id === tempId ? res.data : t));
+          saveTasks(synced);
         }
       })
       .catch((err) => {
         console.error("Add error:", err);
-        fetchTasks();
       });
   };
 
   const toggleTask = (task) => {
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, completed: !t.completed } : t)));
+    const updated = tasks.map((t) => (t.id === task.id ? { ...t, completed: !t.completed } : t));
+    saveTasks(updated);
     instance.put(`/tasks/${task.id}`, { ...task, completed: !task.completed })
       .catch((err) => {
         console.error("Toggle error:", err);
-        fetchTasks();
       });
   };
 
   const deleteTask = (id) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const updated = tasks.filter((t) => t.id !== id);
+    saveTasks(updated);
     instance.delete(`/tasks/${id}`)
       .catch((err) => {
         console.error("Delete error:", err);
-        fetchTasks();
       });
   };
 
   const completedCount = tasks.filter((t) => t.completed).length;
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
+  const { theme } = useTheme();
   const isLight = theme === "light";
 
   // ── FILTER TASKS ──
@@ -145,7 +199,7 @@ export const TaskRouteTask = memo(({
     <>
       {/* ── MOBILE HOME VIEW (< 1024px) ── */}
       <MobileHomeView 
-        tasks={tasks} 
+        tasks={sortedTasks} 
         toggleTask={toggleTask} 
         deleteTask={deleteTask}
         input={input}
@@ -159,15 +213,11 @@ export const TaskRouteTask = memo(({
       <div className="hidden lg:flex flex-col lg:flex-row gap-4 sm:gap-6 w-full flex-1 min-h-0">
 
         {/* ── LEFT CARD — Tasks ── */}
-        <div
-          className={`w-full lg:max-w-[380px] lg:min-w-[320px] min-h-[350px] lg:h-full flex flex-col flex-shrink-0 rounded-2xl p-5 gap-3 border transition-all duration-300 ${
-            leftVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          } ${
-            isLight 
-              ? "bg-white border-slate-200 shadow-slate-200/40 shadow-sm" 
-              : "bg-[#111] border-black/80 shadow-2xl shadow-black/80"
-          }`}
-        >
+        <div className={`w-full lg:max-w-[380px] lg:min-w-[320px] min-h-[350px] lg:h-full flex flex-col flex-shrink-0 rounded-2xl p-5 gap-3 border transition-all duration-300 ${
+          isLight 
+            ? "bg-white border-slate-200 shadow-slate-200/40 shadow-sm" 
+            : "bg-[#111] border-black/80 shadow-2xl shadow-black/80"
+        }`}>
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -203,7 +253,7 @@ export const TaskRouteTask = memo(({
           )}
 
           {/* Task list */}
-          <div className="flex-1 overflow-y-auto min-h-[160px]">
+          <div className="flex-1 overflow-y-auto min-h-[160px] pr-0.5">
             <InsideTask tasks={sortedTasks} toggleTask={toggleTask} deleteTask={deleteTask} />
           </div>
 
@@ -217,44 +267,44 @@ export const TaskRouteTask = memo(({
               isLight ? "bg-slate-50" : "bg-[#0e0e0e]"
             }`}
           >
-            {!isFocused && (
-              <Plus size={16} className={`ml-3 shrink-0 ${isLight ? "text-slate-400" : "text-zinc-600"}`} />
-            )}
+            <Plus size={16} className={`ml-3 shrink-0 ${isLight ? "text-slate-400" : "text-zinc-600"}`} />
             <input
-              ref={inputRef}
               type="text"
               placeholder="Add a task..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
-              className={`flex-1 py-2.5 px-3 bg-transparent border-none outline-none text-sm ${
+              onKeyDown={(e) => { 
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddTask();
+                }
+              }}
+              className={`flex-1 py-2.5 px-2.5 bg-transparent border-none outline-none text-sm ${
                 isLight ? "text-gray-900 placeholder:text-slate-400" : "text-gray-200 placeholder:text-gray-500"
               }`}
             />
-            {isFocused && (
-              <ArrowUp
-                className={`mr-3 shrink-0 cursor-pointer transition-transform duration-150 hover:scale-110 ${
-                  isLight ? "text-slate-400 hover:text-blue-500" : "text-gray-500 hover:text-blue-400"
-                }`}
+            {input.trim().length > 0 && (
+              <button
+                type="button"
                 onMouseDown={(e) => { e.preventDefault(); handleAddTask(); }}
-                size={16}
-              />
+                onClick={handleAddTask}
+                className="mr-2 p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 cursor-pointer shrink-0 transition-all hover:scale-105 active:scale-95"
+                title="Add Task"
+              >
+                <ArrowUp size={14} />
+              </button>
             )}
           </div>
         </div>
 
         {/* ── RIGHT CARD — Timer ── */}
-        <div
-          className={`w-full lg:flex-1 min-h-[420px] lg:h-full flex flex-col items-center justify-center relative overflow-hidden rounded-2xl p-4 sm:p-6 border transition-all duration-300 ${
-            rightVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          } ${
-            isLight 
-              ? "bg-white border-slate-200 shadow-slate-200/40 shadow-sm" 
-              : "bg-[#111] border-black/80 shadow-2xl shadow-black/80"
-          }`}
-        >
+        <div className={`w-full lg:flex-1 min-h-[420px] lg:h-full flex flex-col items-center justify-center relative overflow-hidden rounded-2xl p-4 sm:p-6 border transition-all duration-300 ${
+          isLight 
+            ? "bg-white border-slate-200 shadow-slate-200/40 shadow-sm" 
+            : "bg-[#111] border-black/80 shadow-2xl shadow-black/80"
+        }`}>
           <FocusBreak />
         </div>
 

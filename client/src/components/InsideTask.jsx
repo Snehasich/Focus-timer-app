@@ -2,22 +2,25 @@ import { memo } from 'react';
 import { Circle, CircleCheck, CircleX } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
-export const InsideTask = memo(({ tasks, toggleTask, deleteTask }) => {
+export const InsideTask = memo(({ tasks = [], toggleTask, deleteTask }) => {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      {tasks.length === 0 && (
-        <p className={`text-xs text-center mt-4 ${isLight ? "text-slate-400" : "text-zinc-600"}`}>
-          No tasks yet
-        </p>
+      {(!tasks || tasks.length === 0) && (
+        <div className={`flex flex-col items-center justify-center py-8 text-center ${
+          isLight ? "text-slate-400" : "text-zinc-600"
+        }`}>
+          <p className="text-xs font-semibold">No tasks found</p>
+          <p className="text-[11px] mt-0.5 opacity-75">Add a new task below to get started</p>
+        </div>
       )}
 
       {tasks.map((task) => (
         <div
           key={task.id}
-          className={`group px-3 py-2.2 rounded-xl flex items-center gap-2.5 transition-all duration-150 border hover:border-blue-500 hover:translate-x-0.5 ${
+          className={`group px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition-all duration-150 border hover:border-blue-500 ${
             task.completed
               ? isLight
                 ? "bg-emerald-500/5 border-emerald-500/20"
@@ -29,17 +32,17 @@ export const InsideTask = memo(({ tasks, toggleTask, deleteTask }) => {
         >
           {/* Toggle Button & Text */}
           <div
-            className="flex items-center gap-2.5 flex-1 cursor-pointer transition-all duration-150 group-hover:opacity-100"
-            onClick={() => toggleTask(task)}
+            className="flex items-center gap-2.5 flex-1 cursor-pointer min-w-0"
+            onClick={() => toggleTask && toggleTask(task)}
           >
             {task.completed ? (
-              <CircleCheck size={16} className={isLight ? "text-emerald-500" : "text-emerald-400"} />
+              <CircleCheck size={17} className={`shrink-0 ${isLight ? "text-emerald-500" : "text-emerald-400"}`} />
             ) : (
-              <Circle size={16} className={isLight ? "text-slate-400" : "text-zinc-600"} />
+              <Circle size={17} className={`shrink-0 ${isLight ? "text-slate-400" : "text-zinc-600"}`} />
             )}
 
             <span
-              className={`text-[13.5px] transition-colors duration-200 ${
+              className={`text-xs sm:text-[13.5px] font-medium truncate transition-colors duration-200 ${
                 task.completed
                   ? isLight
                     ? "line-through text-slate-400"
@@ -54,13 +57,19 @@ export const InsideTask = memo(({ tasks, toggleTask, deleteTask }) => {
           </div>
 
           {/* Delete Button */}
-          <CircleX
-            size={15}
-            className={`cursor-pointer opacity-0 group-hover:opacity-100 hover:scale-125 transition-all duration-150 ${
-              isLight ? "text-slate-400 hover:text-red-500" : "text-zinc-600 hover:text-red-400"
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (deleteTask) deleteTask(task.id);
+            }}
+            className={`p-1 rounded-lg transition-all cursor-pointer shrink-0 opacity-70 group-hover:opacity-100 hover:scale-110 ${
+              isLight ? "text-slate-400 hover:text-red-500 hover:bg-red-50" : "text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
             }`}
-            onClick={() => deleteTask(task.id)}
-          />
+            title="Delete task"
+          >
+            <CircleX size={16} />
+          </button>
         </div>
       ))}
     </div>
