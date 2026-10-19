@@ -46,16 +46,18 @@ function Login() {
     setLoading(true);
     setServerError("");
     try {
-      const res = await loginUser({ username: form.username.trim(), password: form.password });
+      const res = await loginUser({ username: form.username.trim(), password: form.password.trim() });
       if (res.data.token) navigate("/");
       else setServerError("Login failed. Please check your credentials.");
     } catch (err) {
       console.error(err);
-      setServerError(
-        err.response?.status === 401
-          ? "Incorrect username or password."
-          : "Server unavailable. Please try again."
-      );
+      if (err.response?.status === 401) {
+        setServerError("Incorrect username or password.");
+      } else if (!err.response) {
+        setServerError("Cannot reach backend server. Please check your network connection.");
+      } else {
+        setServerError(err.response?.data?.message || err.response?.data || "Login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -158,6 +160,9 @@ function Login() {
                     name="username"
                     type="text"
                     autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     placeholder="your username"
                     value={form.username}
                     onChange={(e) => handleChange("username", e.target.value)}
@@ -179,6 +184,9 @@ function Login() {
                       name="password"
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
                       placeholder="your password"
                       value={form.password}
                       onChange={(e) => handleChange("password", e.target.value)}

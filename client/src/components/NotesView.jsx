@@ -16,45 +16,50 @@ export const NotesView = () => {
   const fileInputRef = useRef(null);
   const editorRef = useRef(null);
 
-  // ── Persistent Notes State ──
+  const currentUsername = localStorage.getItem("username") || "user";
+  const notesStorageKey = `focusflow_notes_${currentUsername}`;
+
+  const DEFAULT_WELCOME_NOTE = {
+    id: 1,
+    title: "Welcome to Notes Section",
+    content: `<h1>Welcome to Notes Section 📝</h1>
+<p>Welcome to your personal workspace in FocusFlow! This space is designed to help you capture ideas, organize study notes, manage daily tasks, and keep all your project documentation in one place.</p>
+<hr />
+<h3>✨ Key Features &amp; Tips:</h3>
+<ul>
+  <li><b>Rich Text Formatting:</b> Use the formatting toolbar above to customize headings, bold, italicize, insert bullet points, and code blocks.</li>
+  <li><b>File Attachments:</b> Drag &amp; drop or click <i>Import Files</i> to attach PDFs, documents, images, and presentation slides directly to your notes.</li>
+  <li><b>Tags &amp; Favorites:</b> Star critical notes to keep them pinned and add custom tags (like <code>#Work</code>, <code>#Study</code>, <code>#Ideas</code>) for quick filtering.</li>
+  <li><b>AI Study Assistant:</b> Open the ✨ AI Study menu to generate instant quizzes, flashcards, and summary highlights from your notes.</li>
+</ul>
+<p>Click the <b>+</b> button anytime to create your next note. Happy learning and focusing! 🚀</p>`,
+    date: "Today",
+    lastEdited: "Just now",
+    isFavorite: true,
+    tags: ["Welcome", "Guide"],
+    attachments: []
+  };
+
+  // ── Persistent Notes State (Default single professional welcome note) ──
   const [notes, setNotes] = useState(() => {
-    const saved = localStorage.getItem("app_notes_normal");
+    const saved = localStorage.getItem(notesStorageKey);
     if (saved) {
       try { 
         const parsed = JSON.parse(saved);
-        return parsed.map(n => ({
-          ...n,
-          isFavorite: n.isFavorite ?? false,
-          tags: n.tags || [],
-          lastEdited: n.lastEdited || n.date || "Just now"
-        }));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(n => ({
+            ...n,
+            isFavorite: n.isFavorite ?? false,
+            tags: n.tags || [],
+            lastEdited: n.lastEdited || n.date || "Just now"
+          }));
+        }
       } catch (e) { }
     }
-    return [
-      { 
-        id: 1, 
-        title: "Quick Notes", 
-        content: "<h1>Focus Session Checklist</h1><p>Focus on completing core tasks today. Take 10-minute breaks after 50 minutes of deep work.</p><ul><li><b>Review morning priorities</b></li><li>Complete UI layout enhancements</li><li>Push clean code commit</li></ul>", 
-        date: "Today",
-        lastEdited: "Today at 10:15 AM",
-        isFavorite: true,
-        tags: ["Work", "Focus"],
-        attachments: [] 
-      },
-      { 
-        id: 2, 
-        title: "Weekly Study Goals", 
-        content: "<h2>Key Topics</h2><ol><li>Master React 19 state architecture</li><li>Refine sidebar animations</li><li>Review Spring Boot REST endpoints</li></ol>", 
-        date: "Yesterday",
-        lastEdited: "Yesterday at 4:30 PM",
-        isFavorite: false,
-        tags: ["Study"],
-        attachments: [] 
-      }
-    ];
+    return [DEFAULT_WELCOME_NOTE];
   });
 
-  const [activeNoteId, setActiveNoteId] = useState(() => notes[0]?.id || null);
+  const [activeNoteId, setActiveNoteId] = useState(() => notes[0]?.id || 1);
   const [searchQuery, setSearchQuery] = useState("");
   const [tagFilter, setTagFilter] = useState("all");
   const [viewingAttachment, setViewingAttachment] = useState(null);
@@ -76,8 +81,8 @@ export const NotesView = () => {
   const [pdfHighlightInput, setPdfHighlightInput] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("app_notes_normal", JSON.stringify(notes));
-  }, [notes]);
+    localStorage.setItem(notesStorageKey, JSON.stringify(notes));
+  }, [notes, notesStorageKey]);
 
   const activeNote = notes.find((n) => n.id === activeNoteId) || notes[0];
 

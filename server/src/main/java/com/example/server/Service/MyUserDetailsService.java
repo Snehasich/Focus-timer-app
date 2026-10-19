@@ -9,9 +9,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-// here we don't want default want so we will create a MyUserDetailsService class that implements
-// so i can use in SecurityConfig
-
 @Service
 public class MyUserDetailsService implements UserDetailsService {
 
@@ -21,10 +18,10 @@ public class MyUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        Users user = repo.findByUsername(username);
+        Users user = repo.findByTrimmedUsernameIgnoreCase(username != null ? username.trim() : "");
 
         if(user == null) {
-            System.out.println("user not found");
+            System.out.println("user not found: " + username);
             throw new UsernameNotFoundException("User Not Found");
         }
 

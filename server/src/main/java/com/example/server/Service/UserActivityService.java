@@ -22,65 +22,43 @@ public class UserActivityService {
     }
 
     // ─────────────────────────────────────────────
-    // 1. Record today's login visit and sync streak days (upsert & migrate guest entries)
+    // 1. Record today's app visit / open (ONLY today, no fake past days)
     // ─────────────────────────────────────────────
-    public void logVisit(String username, int streak) {
-        LocalDate today = LocalDate.now();
-
-        // Migrate past Guest activities if user is logged in
-        if (username != null && !"Guest".equals(username)) {
-            List<UserActivity> guestActivities = activityRepo.findByUsernameOrderByActivityDateAsc("Guest");
-            if (guestActivities != null && !guestActivities.isEmpty()) {
-                for (UserActivity ga : guestActivities) {
-                    Optional<UserActivity> existing = activityRepo.findByUsernameAndActivityDate(username, ga.getActivityDate());
-                    if (existing.isEmpty()) {
-                        ga.setUsername(username);
-                        activityRepo.save(ga);
-                    }
-                }
-            }
+    public void logVisit(String username) {
+        if (username == null || username.trim().isEmpty() || "Guest".equalsIgnoreCase(username)) {
+            return;
         }
 
+        LocalDate today = LocalDate.now();
         UserActivity activity = activityRepo
                 .findByUsernameAndActivityDate(username, today)
                 .orElseGet(() -> {
                     UserActivity a = new UserActivity();
                     a.setUsername(username);
                     a.setActivityDate(today);
+                    a.setLoginCount(0);
+                    a.setFocusSeconds(0);
+                    a.setSessionCount(0);
                     return a;
                 });
-        activity.setLoginCount(activity.getLoginCount() + 1);
-        if (activity.getFocusSeconds() == 0) {
-            activity.setFocusSeconds(1800); // 30 mins active focus default
-        }
-        activityRepo.save(activity);
 
-        // Guarantee all past active streak days (at least 4 days) exist in DB
-        int daysToSync = Math.max(4, Math.min(streak, 365));
-        for (int i = 0; i < daysToSync; i++) {
-            LocalDate date = today.minusDays(i);
-            Optional<UserActivity> opt = activityRepo.findByUsernameAndActivityDate(username, date);
-            if (opt.isEmpty()) {
-                UserActivity past = new UserActivity();
-                past.setUsername(username);
-                past.setActivityDate(date);
-                past.setLoginCount(1);
-                past.setFocusSeconds(1800); // 30 mins focus for past streak day
-                past.setSessionCount(1);
-                activityRepo.save(past);
-            }
-        }
+        activity.setLoginCount(activity.getLoginCount() + 1);
+        activityRepo.save(activity);
     }
 
-    // Overload for default call
-    public void logVisit(String username) {
-        logVisit(username, 4);
+    // Overload for backward compatibility
+    public void logVisit(String username, int streak) {
+        logVisit(username);
     }
 
     // ─────────────────────────────────────────────
     // 2. Log a completed focus session (upsert)
     // ─────────────────────────────────────────────
     public void logFocusSession(String username, long focusSeconds, int sessions) {
+        if (username == null || username.trim().isEmpty() || "Guest".equalsIgnoreCase(username)) {
+            return;
+        }
+
         LocalDate today = LocalDate.now();
         UserActivity activity = activityRepo
                 .findByUsernameAndActivityDate(username, today)
@@ -88,48 +66,50 @@ public class UserActivityService {
                     UserActivity a = new UserActivity();
                     a.setUsername(username);
                     a.setActivityDate(today);
+                    a.setLoginCount(1);
+                    a.setFocusSeconds(0);
+                    a.setSessionCount(0);
                     return a;
                 });
+
         activity.setFocusSeconds(activity.getFocusSeconds() + focusSeconds);
         activity.setSessionCount(activity.getSessionCount() + sessions);
         activityRepo.save(activity);
     }
 
     // ─────────────────────────────────────────────
-    // 3. Build full dashboard stats for a user
+    // 3. Build full dashboard stats for a user (100% REAL DATA)
     // ─────────────────────────────────────────────
     public Map<String, Object> getDashboardStats(String username) {
         LocalDate today = LocalDate.now();
         LocalDate yearAgo = today.minusYears(1);
 
-        // Always sync past streak days on stats fetch
-        logVisit(username, 4);
+        // Record today's visit when fetching dashboard
+        logVisit(username);
 
         // All activity in last 12 months for this user
         List<UserActivity> allActivity = activityRepo
                 .findByUsernameAndActivityDateBetween(username, yearAgo, today);
 
-        // Build a map of date → focusSeconds for quick lookup
-        Map<LocalDate, Long> focusMap = allActivity.stream()
-                .collect(Collectors.toMap(UserActivity::getActivityDate, UserActivity::getFocusSeconds, (a, b) -> a));
+        // Map date -> activity
+        Map<LocalDate, UserActivity> activityMap = allActivity.stream()
+                .collect(Collectors.toMap(UserActivity::getActivityDate, a -> a, (a, b) -> a));
 
-        // ── Current Streak ──
+        // ── Current Streak (Real consecutive days up to today or yesterday) ──
         int currentStreak = 0;
-        LocalDate cursor = today;
+        UserActivity todayAct = activityMap.get(today);
+        boolean activeToday = todayAct != null && (todayAct.getLoginCount() > 0 || todayAct.getFocusSeconds() > 0);
+
+        LocalDate cursor = activeToday ? today : today.minusDays(1);
         while (true) {
-            Long secs = focusMap.get(cursor);
-            boolean active = (secs != null && secs > 0);
-            if (!active) {
-                Optional<UserActivity> opt = activityRepo.findByUsernameAndActivityDate(username, cursor);
-                active = opt.isPresent() && opt.get().getLoginCount() > 0;
-            }
+            UserActivity act = activityMap.get(cursor);
+            boolean active = act != null && (act.getLoginCount() > 0 || act.getFocusSeconds() > 0);
             if (!active) break;
             currentStreak++;
             cursor = cursor.minusDays(1);
         }
-        if (currentStreak == 0) currentStreak = 4;
 
-        // ── Max Streak ──
+        // ── Max Streak (Real maximum consecutive streak in history) ──
         List<UserActivity> allSorted = activityRepo.findByUsernameOrderByActivityDateAsc(username);
         int maxStreak = 0, tempStreak = 0;
         LocalDate prev = null;
@@ -146,21 +126,22 @@ public class UserActivityService {
         }
         maxStreak = Math.max(maxStreak, currentStreak);
 
-        // ── Year totals ──
+        // ── Year totals (Real sums) ──
         long totalSecondsYear = allActivity.stream().mapToLong(UserActivity::getFocusSeconds).sum();
         double totalHoursYear = Math.round((totalSecondsYear / 3600.0) * 10.0) / 10.0;
-        long totalActiveDays = allActivity.stream().filter(a -> a.getFocusSeconds() > 0 || a.getLoginCount() > 0).count();
-        if (totalActiveDays < 4) totalActiveDays = 4;
+        long totalActiveDays = allActivity.stream()
+                .filter(a -> a.getFocusSeconds() > 0 || a.getLoginCount() > 0)
+                .count();
 
         // ── Focus time today ──
-        long focusSecondsToday = focusMap.getOrDefault(today, 1800L);
+        long focusSecondsToday = todayAct != null ? todayAct.getFocusSeconds() : 0L;
 
         // ── Task counts (real from DB for this user) ──
         List<Task> tasks = taskRepo.findByUsername(username);
         long completedTasks = tasks.stream().filter(Task::isCompleted).count();
         long totalTasks = tasks.size();
 
-        // ── Weekly data (last 7 days) ──
+        // ── Weekly data (last 7 days - real numbers) ──
         List<Map<String, Object>> weeklyData = new ArrayList<>();
         String[] dayNames = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
         for (int i = 6; i >= 0; i--) {
@@ -168,21 +149,25 @@ public class UserActivityService {
             Map<String, Object> entry = new HashMap<>();
             entry.put("date", day.toString());
             entry.put("dayName", dayNames[day.getDayOfWeek().getValue() % 7]);
-            long sec = focusMap.getOrDefault(day, 1800L);
+            UserActivity a = activityMap.get(day);
+            long sec = a != null ? a.getFocusSeconds() : 0L;
             entry.put("focusMins", Math.round(sec / 60.0));
             entry.put("focusSeconds", sec);
             weeklyData.add(entry);
         }
 
-        // ── Heatmap Data ──
-        List<Map<String, Object>> heatmap = allActivity.stream().map(a -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("date", a.getActivityDate().toString());
-            m.put("focusSeconds", Math.max(a.getFocusSeconds(), 1800L));
-            m.put("sessionCount", Math.max(a.getSessionCount(), 1));
-            m.put("loginCount", Math.max(a.getLoginCount(), 1));
-            return m;
-        }).collect(Collectors.toList());
+        // ── Heatmap Data (ONLY days with real user activity) ──
+        List<Map<String, Object>> heatmap = allActivity.stream()
+                .filter(a -> a.getFocusSeconds() > 0 || a.getLoginCount() > 0)
+                .map(a -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("date", a.getActivityDate().toString());
+                    m.put("focusSeconds", a.getFocusSeconds());
+                    m.put("sessionCount", a.getSessionCount());
+                    m.put("loginCount", a.getLoginCount());
+                    m.put("isActive", true);
+                    return m;
+                }).collect(Collectors.toList());
 
         Map<String, Object> result = new HashMap<>();
         result.put("username", username);

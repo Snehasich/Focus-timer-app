@@ -18,7 +18,7 @@ export const Side = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { theme, sidebarOpen, toggleSidebar } = useTheme();
 
-  const streak = Math.max(stats?.currentStreak || 0, localStreak, 1);
+  const streak = stats?.currentStreak != null ? stats.currentStreak : localStreak;
 
   const handleConfirmLogout = () => {
     logout();
@@ -32,13 +32,16 @@ export const Side = () => {
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
-    const lastVisit = localStorage.getItem("focusflow_last_visit");
-    const storedStreak = parseInt(localStorage.getItem("focusflow_streak") || "0", 10);
+    const visitKey = `focusflow_last_visit_${stored}`;
+    const streakKey = `focusflow_streak_${stored}`;
+
+    const lastVisit = localStorage.getItem(visitKey);
+    const storedStreak = parseInt(localStorage.getItem(streakKey) || "0", 10);
 
     if (!lastVisit) {
       setLocalStreak(1);
-      localStorage.setItem("focusflow_streak", "1");
-      localStorage.setItem("focusflow_last_visit", todayStr);
+      localStorage.setItem(streakKey, "1");
+      localStorage.setItem(visitKey, todayStr);
     } else if (lastVisit === todayStr) {
       setLocalStreak(storedStreak > 0 ? storedStreak : 1);
     } else {
@@ -50,12 +53,12 @@ export const Side = () => {
       if (diffDays === 1) {
         const newStreak = (storedStreak > 0 ? storedStreak : 0) + 1;
         setLocalStreak(newStreak);
-        localStorage.setItem("focusflow_streak", String(newStreak));
+        localStorage.setItem(streakKey, String(newStreak));
       } else {
         setLocalStreak(1);
-        localStorage.setItem("focusflow_streak", "1");
+        localStorage.setItem(streakKey, "1");
       }
-      localStorage.setItem("focusflow_last_visit", todayStr);
+      localStorage.setItem(visitKey, todayStr);
     }
   }, []);
 

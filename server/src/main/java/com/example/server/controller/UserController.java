@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
-
 @RestController
 public class UserController {
 
@@ -33,7 +31,11 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody Users user) {
         try {
             String token = service.verify(user);
-            return ResponseEntity.ok(Map.of("token", token));
+            String canonicalUsername = service.getCanonicalUsername(user.getUsername());
+            return ResponseEntity.ok(Map.of(
+                "token", token,
+                "username", canonicalUsername
+            ));
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }

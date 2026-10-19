@@ -85,9 +85,10 @@ export default function Dashboard() {
 
   const dailyGoalPct = Math.min(100, Math.round((liveFocusSecondsToday / (4 * 3600)) * 100));
 
-  // ── Local Streak fallback & Heatmap Map ──
-  const localStreak = useMemo(() => parseInt(localStorage.getItem("focusflow_streak") || "4", 10), []);
-  const currentStreakVal = Math.max(stats?.currentStreak || 0, localStreak, 1);
+  // ── Dynamic Streak & Heatmap Map (100% Real User Activity) ──
+  const currentStreakVal = stats?.currentStreak != null ? stats.currentStreak : (liveFocusSecondsToday > 0 ? 1 : 0);
+  const activeDaysVal = stats?.activeDays || stats?.totalActiveDays || (currentStreakVal > 0 ? currentStreakVal : 0);
+  const maxStreakVal = Math.max(stats?.maxStreak || 0, currentStreakVal);
 
   // ── Real-Time Dynamic XP & Level Calculation ──
   const totalFocusMins = Math.floor(liveFocusSecondsToday / 60);
@@ -102,7 +103,9 @@ export default function Dashboard() {
       if (Array.isArray(stats.heatmap)) {
         stats.heatmap.forEach((item) => {
           if (item.date) {
-            map[item.date] = (item.focusSeconds && item.focusSeconds > 0) ? item.focusSeconds : 1800;
+            map[item.date] = (item.focusSeconds && item.focusSeconds > 0) 
+              ? item.focusSeconds 
+              : ((item.loginCount > 0 || item.isActive) ? 1800 : 0);
           }
         });
       } else if (stats.heatmapData) {
@@ -110,22 +113,15 @@ export default function Dashboard() {
       }
     }
 
-    // Populate past streak days up to effective streak count with active focus seconds (1800s = 30m)
-    const effectiveStreak = Math.max(stats?.currentStreak || 0, localStreak, 1);
+    // Mark today as active because user has the app open right now
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < effectiveStreak; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      if (!map[key] || map[key] === 0) {
-        map[key] = 1800;
-      }
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    if (!map[todayKey] || map[todayKey] === 0) {
+      map[todayKey] = liveFocusSecondsToday > 0 ? liveFocusSecondsToday : 1800;
     }
 
     return map;
-  }, [stats, localStreak]);
+  }, [stats, liveFocusSecondsToday]);
 
   // ─────────────────────────────────────────────────────────
   //  12 SEPARATE MONTH BLOCKS (authentic LeetCode style)
@@ -227,8 +223,8 @@ export default function Dashboard() {
     { title: "10 Tasks Completed", desc: "Finish 10 total tasks", icon: "🏆", unlocked: completedTasksCount >= 10 },
     { title: "Early Bird", desc: "Log focus session before 9 AM", icon: "🌅", unlocked: new Date().getHours() < 12 },
     { title: "4-Hour Focus Day", desc: "Complete 4 hours in a single day", icon: "⚡", unlocked: liveFocusSecondsToday >= 4 * 3600 },
-    { title: "Focus Apprentice", desc: "Log your first pomodoro", icon: "🎯", unlocked: (stats?.totalActiveDays || stats?.activeDays || localStreak) >= 1 },
-    { title: "Consistency Master", desc: "Log active focus for 30 days", icon: "👑", unlocked: (stats?.totalActiveDays || stats?.activeDays || localStreak) >= 30 },
+    { title: "Focus Apprentice", desc: "Log your first pomodoro", icon: "🎯", unlocked: activeDaysVal >= 1 },
+    { title: "Consistency Master", desc: "Log active focus for 30 days", icon: "👑", unlocked: activeDaysVal >= 30 },
   ];
 
   // ── Skeleton pill ──
@@ -399,9 +395,9 @@ export default function Dashboard() {
             },
             {
               label: "Streak", icon: <Flame size={15} className="text-orange-500" />, iconBg: "rgba(249,115,22,.12)",
-              value: loading ? null : `${Math.max(stats?.currentStreak || 0, localStreak)} Days`,
+              value: loading ? null : `${currentStreakVal} ${currentStreakVal === 1 ? "Day" : "Days"}`,
               valueColor: "#f97316",
-              sub: <span className="opacity-60">Best: {Math.max(stats?.maxStreak || 0, localStreak)} days 🔥</span>,
+              sub: <span className="opacity-60">Best: {maxStreakVal} {maxStreakVal === 1 ? "day" : "days"} 🔥</span>,
             },
             {
               label: "Daily Goal", icon: <Target size={15} className="text-purple-500" />, iconBg: "rgba(168,85,247,.12)",
@@ -445,7 +441,7 @@ export default function Dashboard() {
               <p className="text-[11px] font-semibold opacity-55 mt-0.5">
                 {loading
                   ? "Loading your activity..."
-                  : `${stats?.totalActiveDays ?? stats?.activeDays ?? localStreak ?? 1} active days in the last year • ${stats?.totalHoursYear ?? (Math.round(((stats?.totalFocusSecondsYear || (localStreak * 1800)) / 3600) * 10) / 10)} hrs total`
+                  : `${activeDaysVal} active ${activeDaysVal === 1 ? "day" : "days"} in the last year • ${stats?.totalHoursYear ?? (Math.round(((stats?.totalFocusSecondsYear || 0) / 3600) * 10) / 10)} hrs total`
                 }
               </p>
             </div>
@@ -512,9 +508,9 @@ export default function Dashboard() {
           {/* Bottom stats */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 pt-3 border-t text-xs font-bold"
             style={{ borderColor: isLight ? "#e2e8f0" : "#27272a" }}>
-            <span>🔥 Current Streak: <strong className="text-orange-500">{Math.max(stats?.currentStreak || 0, localStreak)} Days</strong></span>
-            <span>🏆 Max Streak: <strong className="text-yellow-500">{Math.max(stats?.maxStreak || 0, localStreak)} Days</strong></span>
-            <span>⚡ Active Days: <strong className="text-emerald-500">{Math.max(stats?.activeDays || stats?.totalActiveDays || 0, localStreak)}</strong></span>
+            <span>🔥 Current Streak: <strong className="text-orange-500">{currentStreakVal} {currentStreakVal === 1 ? "Day" : "Days"}</strong></span>
+            <span>🏆 Max Streak: <strong className="text-yellow-500">{maxStreakVal} {maxStreakVal === 1 ? "Day" : "Days"}</strong></span>
+            <span>⚡ Active Days: <strong className="text-emerald-500">{activeDaysVal}</strong></span>
             <span className="ml-auto text-[10px] font-semibold opacity-40">
               {backendOnline ? "Synced with your account" : "Local session only"}
             </span>

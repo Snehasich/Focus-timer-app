@@ -16,20 +16,16 @@ public class TaskService {
         this.repository = repository;
     }
 
-    // 🔐 GET TASKS FOR LOGGED-IN USER (WITH GUEST FALLBACK ADOPTION)
+    // 🔐 GET TASKS FOR LOGGED-IN USER (New users have 0 tasks by default)
     public List<Task> getTasksByUser(String username) {
-        List<Task> userTasks = repository.findByUsername(username);
-        if ((userTasks == null || userTasks.isEmpty()) && username != null && !"Guest".equals(username)) {
-            List<Task> guestTasks = repository.findByUsername("Guest");
-            if (guestTasks != null && !guestTasks.isEmpty()) {
-                guestTasks.forEach(t -> t.setUsername(username));
-                return repository.saveAll(guestTasks);
-            }
+        if (username == null || username.trim().isEmpty()) {
+            return List.of();
         }
+        List<Task> userTasks = repository.findByUsername(username);
         return userTasks != null ? userTasks : List.of();
     }
 
-    // ➕ CREATE TASK (already assigned username in controller)
+    // ➕ CREATE TASK
     public Task createTasks(Task task) {
         if (task.getUsername() == null || task.getUsername().trim().isEmpty()) {
             task.setUsername("Guest");
@@ -48,9 +44,7 @@ public class TaskService {
 
         task.setText(updatedTask.getText());
         task.setCompleted(updatedTask.isCompleted());
-        if (task.getUsername() == null || "Guest".equals(task.getUsername())) {
-            task.setUsername(username);
-        }
+        task.setUsername(username);
 
         return repository.save(task);
     }
@@ -61,5 +55,24 @@ public class TaskService {
         if (task != null) {
             repository.delete(task);
         }
+    }
+
+    // ⚡ BULK ACTION
+    public List<Task> executeBulkAction(String action, String username) {
+        List<Task> tasks = repository.findByUsername(username);
+        if (tasks == null || tasks.isEmpty()) return List.of();
+
+        if ("mark-all-completed".equalsIgnoreCase(action)) {
+            tasks.forEach(t -> t.setCompleted(true));
+            return repository.saveAll(tasks);
+        } else if ("clear-completed".equalsIgnoreCase(action)) {
+            List<Task> completed = tasks.stream().filter(Task::isCompleted).toList();
+            repository.deleteAll(completed);
+            return repository.findByUsername(username);
+        } else if ("delete-all".equalsIgnoreCase(action)) {
+            repository.deleteAll(tasks);
+            return List.of();
+        }
+        return tasks;
     }
 }

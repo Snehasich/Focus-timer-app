@@ -4,23 +4,20 @@ import { getDashboardStats, logLogin } from "../services/activityService";
 
 const AppContext = createContext();
 
-const DEFAULT_INITIAL_TASKS = [
-  { id: 101, text: "Complete 50-minute Pomodoro focus session", completed: false },
-  { id: 102, text: "Review daily study & project goals", completed: true },
-  { id: 103, text: "Organize notes and schedule events", completed: false }
-];
-
 export const AppProvider = ({ children }) => {
-  // ── Global Tasks State ──
+  const currentUsername = localStorage.getItem("username") || "user";
+  const tasksKey = `focusflow_tasks_${currentUsername}`;
+
+  // ── Global Tasks State (New users start with empty tasks) ──
   const [tasks, setTasks] = useState(() => {
     try {
-      const saved = localStorage.getItem("focusflow_tasks");
+      const saved = localStorage.getItem(tasksKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
-    return DEFAULT_INITIAL_TASKS;
+    return []; // Empty by default for new users!
   });
 
   // ── Global Dashboard Stats State ──
@@ -30,7 +27,7 @@ export const AppProvider = ({ children }) => {
   const saveTasks = (newTasks) => {
     setTasks(newTasks);
     try {
-      localStorage.setItem("focusflow_tasks", JSON.stringify(newTasks));
+      localStorage.setItem(tasksKey, JSON.stringify(newTasks));
     } catch (e) {}
   };
 
@@ -50,31 +47,13 @@ export const AppProvider = ({ children }) => {
   const fetchTasks = useCallback(async () => {
     try {
       const res = await instance.get("/tasks");
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      if (Array.isArray(res.data)) {
         saveTasks(res.data);
-      } else {
-        const localSaved = localStorage.getItem("focusflow_tasks");
-        let localTasks = [];
-        try {
-          localTasks = localSaved ? JSON.parse(localSaved) : [];
-        } catch (e) {}
-
-        if (localTasks.length > 0) {
-          setTasks(localTasks);
-          localTasks.forEach((t) => {
-            instance.post("/tasks", { text: t.text, completed: t.completed }).catch(() => {});
-          });
-        } else {
-          saveTasks(DEFAULT_INITIAL_TASKS);
-          DEFAULT_INITIAL_TASKS.forEach((t) => {
-            instance.post("/tasks", { text: t.text, completed: t.completed }).catch(() => {});
-          });
-        }
       }
     } catch (err) {
       console.error("Task fetch error:", err);
     }
-  }, []);
+  }, [tasksKey]);
 
   useEffect(() => {
     fetchTasks();
@@ -89,93 +68,83 @@ export const AppProvider = ({ children }) => {
     const tempTask = { id: tempId, text, completed: false };
     const updated = [...tasks, tempTask];
     saveTasks(updated);
-    logLogin().catch(() => {});
-    refreshStats();
 
     try {
       const res = await instance.post("/tasks", { text, completed: false });
       if (res.data && res.data.id) {
-        const synced = updated.map((t) => (t.id === tempId ? res.data : t));
-        saveTasks(synced);
+        setTasks((prev) =>
+          prev.map((t) => (t.id === tempId ? { ...t, id: res.data.id } : t))
+        );
       }
+      logLogin().catch(() => {});
       refreshStats();
     } catch (err) {
-      console.error("Add task error:", err);
+      console.error("Error creating task:", err);
     }
   };
 
-  // ── Toggle Task ──
+  // ── Toggle Task Completed ──
   const toggleTask = async (task) => {
-    const updated = tasks.map((t) => (t.id === task.id ? { ...t, completed: !t.completed } : t));
+    const nextCompleted = !task.completed;
+    const updated = tasks.map((t) =>
+      t.id === task.id ? { ...t, completed: nextCompleted } : t
+    );
     saveTasks(updated);
-    logLogin().catch(() => {});
-    refreshStats();
 
     try {
-      await instance.put(`/tasks/${task.id}`, { ...task, completed: !task.completed });
+      await instance.put(`/tasks/${task.id}`, {
+        text: task.text,
+        completed: nextCompleted,
+      });
+      logLogin().catch(() => {});
       refreshStats();
     } catch (err) {
-      console.error("Toggle task error:", err);
+      console.error("Error toggling task:", err);
     }
   };
 
   // ── Delete Task ──
-  const deleteTask = async (id) => {
-    const updated = tasks.filter((t) => t.id !== id);
+  const deleteTask = async (taskId) => {
+    const updated = tasks.filter((t) => t.id !== taskId);
     saveTasks(updated);
-    logLogin().catch(() => {});
-    refreshStats();
 
     try {
-      await instance.delete(`/tasks/${id}`);
+      await instance.delete(`/tasks/${taskId}`);
       refreshStats();
     } catch (err) {
-      console.error("Delete task error:", err);
+      console.error("Error deleting task:", err);
     }
   };
 
-  // ── Execute Bulk Action ──
+  // ── Bulk Actions ──
   const executeBulkAction = async (action) => {
     if (!action) return;
 
-    if (action === "Reset All Tasks") {
-      const deletePromises = tasks.map((task) => instance.delete(`/tasks/${task.id}`));
-      saveTasks([]);
-      refreshStats();
-      try {
-        await Promise.all(deletePromises);
-        fetchTasks();
-        refreshStats();
-      } catch (err) {
-        console.error("Bulk delete error:", err);
-      }
-    } else if (action === "Mark All Completed") {
+    if (action === "mark-all-completed") {
       const updated = tasks.map((t) => ({ ...t, completed: true }));
       saveTasks(updated);
-      refreshStats();
-      const updatePromises = tasks
-        .filter((t) => !t.completed)
-        .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: true }));
       try {
-        await Promise.all(updatePromises);
-        fetchTasks();
+        await instance.post("/tasks/bulk", { action: "mark-all-completed" });
         refreshStats();
-      } catch (err) {
-        console.error("Bulk complete error:", err);
+      } catch (e) {
+        console.error("Bulk action failed:", e);
       }
-    } else if (action === "Mark All Active") {
-      const updated = tasks.map((t) => ({ ...t, completed: false }));
+    } else if (action === "clear-completed") {
+      const updated = tasks.filter((t) => !t.completed);
       saveTasks(updated);
-      refreshStats();
-      const updatePromises = tasks
-        .filter((t) => t.completed)
-        .map((t) => instance.put(`/tasks/${t.id}`, { ...t, completed: false }));
       try {
-        await Promise.all(updatePromises);
-        fetchTasks();
+        await instance.post("/tasks/bulk", { action: "clear-completed" });
         refreshStats();
-      } catch (err) {
-        console.error("Bulk active error:", err);
+      } catch (e) {
+        console.error("Bulk action failed:", e);
+      }
+    } else if (action === "delete-all") {
+      saveTasks([]);
+      try {
+        await instance.post("/tasks/bulk", { action: "delete-all" });
+        refreshStats();
+      } catch (e) {
+        console.error("Bulk action failed:", e);
       }
     }
   };
@@ -184,16 +153,14 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         tasks,
-        saveTasks,
+        stats,
+        statsLoading,
+        refreshStats,
         fetchTasks,
         addTask,
         toggleTask,
         deleteTask,
         executeBulkAction,
-
-        stats,
-        statsLoading,
-        refreshStats,
       }}
     >
       {children}

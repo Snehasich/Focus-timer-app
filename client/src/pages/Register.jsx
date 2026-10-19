@@ -203,6 +203,9 @@ function Register() {
                     placeholder="choose a username"
                     value={user.username}
                     autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     onChange={(e) => setUser({ ...user, username: e.target.value })}
                     onFocus={() => setFocused("username")}
                     onBlur={() => setFocused(null)}
@@ -225,6 +228,9 @@ function Register() {
                       placeholder="choose a password"
                       value={user.password}
                       autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
                       onChange={(e) => setUser({ ...user, password: e.target.value })}
                       onFocus={() => setFocused("password")}
                       onBlur={() => setFocused(null)}
