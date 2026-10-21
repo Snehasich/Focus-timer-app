@@ -24,6 +24,10 @@ export default defineConfig({
       '/activity': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/notes': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

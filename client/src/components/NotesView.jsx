@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { useApp } from "../context/AppContext";
 import { logLogin } from "../services/activityService";
 import instance from "../api/axiosInstance";
 import { 
@@ -17,7 +18,8 @@ export const NotesView = () => {
   const fileInputRef = useRef(null);
   const editorRef = useRef(null);
 
-  const currentUsername = localStorage.getItem("username") || "user";
+  const { currentUser } = useApp();
+  const currentUsername = currentUser || localStorage.getItem("username") || "user";
   const notesStorageKey = `focusflow_notes_${currentUsername}`;
 
   const DEFAULT_WELCOME_NOTE = {
@@ -69,7 +71,24 @@ export const NotesView = () => {
     logLogin().catch(() => {});
   }, []);
 
-  // ── Sync notes with Railway MySQL backend on load ──
+  // ── 1. Re-read user's local notes when user logs in / switches account ──
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(notesStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setNotes(parsed);
+          setActiveNoteId(parsed[0].id);
+          return;
+        }
+      }
+    } catch (e) {}
+    setNotes([DEFAULT_WELCOME_NOTE]);
+    setActiveNoteId(1);
+  }, [currentUsername, notesStorageKey]);
+
+  // ── 2. Sync notes from Railway MySQL backend for this specific user ──
   useEffect(() => {
     let isMounted = true;
     const fetchNotes = async () => {
@@ -101,7 +120,7 @@ export const NotesView = () => {
     };
     fetchNotes();
     return () => { isMounted = false; };
-  }, [notesStorageKey]);
+  }, [currentUsername, notesStorageKey]);
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showAiMenu, setShowAiMenu] = useState(false);
