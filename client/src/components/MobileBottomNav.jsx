@@ -2,15 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { 
   House, Timer, TimerReset, Calendar, NotebookPen, 
-  LayoutDashboard, MoreHorizontal, Sun, Moon, LogOut, X 
+  LayoutDashboard, MoreHorizontal, Sun, Moon, LogOut, X, Sparkles 
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { logout } from "../services/authService";
+import { useApp } from "../context/AppContext";
 
 export const MobileBottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { clearSession } = useApp();
   const isLight = theme === "light";
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const menuRef = useRef(null);
@@ -37,6 +39,7 @@ export const MobileBottomNav = () => {
   ];
 
   const secondaryNavItems = [
+    { path: "/focus-ai", label: "Focus Ai", icon: Sparkles },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/stopwatch", label: "StopWatch", icon: TimerReset },
   ];
@@ -50,6 +53,7 @@ export const MobileBottomNav = () => {
 
   const handleLogout = () => {
     logout();
+    if (clearSession) clearSession();
     navigate("/login");
   };
 

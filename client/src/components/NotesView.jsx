@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { logLogin } from "../services/activityService";
+import instance from "../api/axiosInstance";
 import { 
   NotebookPen, Plus, Trash2, StickyNote, Search, 
   Paperclip, FileText, Download, X, File, Image as ImageIcon,
@@ -67,6 +68,41 @@ export const NotesView = () => {
   useEffect(() => {
     logLogin().catch(() => {});
   }, []);
+
+  // ── Sync notes with Railway MySQL backend on load ──
+  useEffect(() => {
+    let isMounted = true;
+    const fetchNotes = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await instance.get("/notes");
+        if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+          const parsed = res.data.map((n) => ({
+            ...n,
+            isFavorite: Boolean(n.favorite ?? n.isFavorite ?? false),
+            tags: typeof n.tags === "string" 
+              ? (() => { try { return JSON.parse(n.tags); } catch (e) { return [n.tags]; } })() 
+              : (n.tags || []),
+            attachments: typeof n.attachments === "string" 
+              ? (() => { try { return JSON.parse(n.attachments); } catch (e) { return []; } })() 
+              : (n.attachments || []),
+            lastEdited: n.lastEdited || n.date || "Just now"
+          }));
+          setNotes(parsed);
+          localStorage.setItem(notesStorageKey, JSON.stringify(parsed));
+          if (!activeNoteId || !parsed.some((n) => n.id === activeNoteId)) {
+            setActiveNoteId(parsed[0].id);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not fetch cloud notes, using local fallback:", e);
+      }
+    };
+    fetchNotes();
+    return () => { isMounted = false; };
+  }, [notesStorageKey]);
+
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showAiMenu, setShowAiMenu] = useState(false);
   const [newTagInput, setNewTagInput] = useState("");
@@ -95,14 +131,39 @@ export const NotesView = () => {
     }
   }, [activeNoteId]);
 
+  // ── Debounced Cloud Save to Backend ──
+  const saveTimeoutRef = useRef({});
+  const syncNoteToBackend = (noteToSync) => {
+    if (!noteToSync || !noteToSync.id) return;
+    if (saveTimeoutRef.current[noteToSync.id]) {
+      clearTimeout(saveTimeoutRef.current[noteToSync.id]);
+    }
+    saveTimeoutRef.current[noteToSync.id] = setTimeout(async () => {
+      try {
+        await instance.put(`/notes/${noteToSync.id}`, {
+          title: noteToSync.title,
+          content: noteToSync.content,
+          date: noteToSync.date,
+          lastEdited: noteToSync.lastEdited,
+          isFavorite: Boolean(noteToSync.isFavorite),
+          tags: JSON.stringify(noteToSync.tags || []),
+          attachments: JSON.stringify(noteToSync.attachments || [])
+        });
+      } catch (err) {
+        console.warn("Failed to sync note update to backend:", err);
+      }
+    }, 600);
+  };
+
   // ── Note Handlers ──
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+    const tempId = Date.now();
     const newNote = {
-      id: Date.now(),
+      id: tempId,
       title: "Untitled Note",
       content: "<p>Start typing your document here...</p>",
       date: dateStr,
@@ -113,6 +174,24 @@ export const NotesView = () => {
     };
     setNotes([newNote, ...notes]);
     setActiveNoteId(newNote.id);
+
+    try {
+      const res = await instance.post("/notes", {
+        title: newNote.title,
+        content: newNote.content,
+        date: newNote.date,
+        lastEdited: newNote.lastEdited,
+        isFavorite: false,
+        tags: JSON.stringify(newNote.tags),
+        attachments: JSON.stringify(newNote.attachments)
+      });
+      if (res.data && res.data.id) {
+        setNotes((prev) => prev.map((n) => n.id === tempId ? { ...n, id: res.data.id } : n));
+        setActiveNoteId(res.data.id);
+      }
+    } catch (e) {
+      console.warn("Could not save new note to backend:", e);
+    }
   };
 
   const handleUpdateNote = (field, value) => {
@@ -122,13 +201,9 @@ export const NotesView = () => {
     const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     const lastEditedStr = `${dateStr} at ${timeStr}`;
 
-    setNotes(
-      notes.map((n) => 
-        n.id === activeNote.id 
-          ? { ...n, [field]: value, lastEdited: lastEditedStr } 
-          : n
-      )
-    );
+    const updatedNote = { ...activeNote, [field]: value, lastEdited: lastEditedStr };
+    setNotes(notes.map((n) => n.id === activeNote.id ? updatedNote : n));
+    syncNoteToBackend(updatedNote);
   };
 
   const handleEditorInput = () => {
@@ -139,9 +214,11 @@ export const NotesView = () => {
 
   const handleToggleFavorite = (id, e) => {
     if (e) e.stopPropagation();
-    setNotes(
-      notes.map((n) => (n.id === id ? { ...n, isFavorite: !n.isFavorite } : n))
-    );
+    const target = notes.find((n) => n.id === id);
+    if (!target) return;
+    const updated = { ...target, isFavorite: !target.isFavorite };
+    setNotes(notes.map((n) => (n.id === id ? updated : n)));
+    syncNoteToBackend(updated);
   };
 
   const handleDeleteNote = (id, e) => {
@@ -151,6 +228,9 @@ export const NotesView = () => {
     if (activeNoteId === id) {
       setActiveNoteId(updated[0]?.id || null);
     }
+    instance.delete(`/notes/${id}`).catch((err) => {
+      console.warn("Could not delete note from server:", err);
+    });
   };
 
   // ── Tag Handlers ──

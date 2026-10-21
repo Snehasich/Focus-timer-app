@@ -10,6 +10,7 @@ import Dashboard from "./components/Dashboard";
 import FocusBreak from "./components/Timer/FocusBreak";
 import CalendarView from "./components/CalendarView";
 import NotesView from "./components/NotesView";
+import FocusAiView from "./components/FocusAiView";
 import { logLogin } from "./services/activityService";
 
 // 🔐 Private Route
@@ -178,6 +179,9 @@ function App() {
 
               {/* Notes */}
               <Route path="notes" element={<NotesView />} />
+
+              {/* Focus AI */}
+              <Route path="focus-ai" element={<FocusAiView />} />
             </Route>
 
           </Routes>

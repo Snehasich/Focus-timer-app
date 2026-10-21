@@ -3,6 +3,8 @@ import { registerUser } from "../services/authService";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, UserPlus } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import focusflowLogoDark from "../assets/focusflow-logo-dark.png";
+import focusflowLogoLight from "../assets/focusflow-logo-light.png";
 
 function Register() {
   const [user, setUser] = useState({ username: "", password: "" });
@@ -145,17 +147,11 @@ function Register() {
 
           {/* Logo */}
           <div style={{ ...fadeUp(0), textAlign: "center", marginBottom: 32 }}>
-            <div style={{
-              width: 46, height: 46,
-              borderRadius: 13,
-              background: "linear-gradient(135deg, #10b981 0%, #2563eb 100%)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              marginBottom: 18,
-              boxShadow: isLight ? "0 0 32px rgba(16,185,129,0.15)" : "0 0 32px rgba(16,185,129,0.35), 0 8px 20px rgba(0,0,0,0.4)",
-            }}>⏱</div>
+            <img 
+              src={isLight ? focusflowLogoLight : focusflowLogoDark} 
+              alt="FocusFlow Logo" 
+              className="w-14 h-14 rounded-2xl mx-auto mb-3.5 shadow-xl transition-transform hover:scale-105 duration-200"
+            />
             <h1 style={{
               color: isLight ? "#111827" : "#f1f1ff",
               fontSize: "1.55rem",

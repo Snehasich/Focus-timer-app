@@ -5,13 +5,13 @@ import { getDashboardStats, logLogin } from "../services/activityService";
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  const currentUsername = localStorage.getItem("username") || "user";
-  const tasksKey = `focusflow_tasks_${currentUsername}`;
+  const [currentUser, setCurrentUser] = useState(() => localStorage.getItem("username") || "user");
+  const tasksKey = `focusflow_tasks_${currentUser}`;
 
   // ── Global Tasks State (New users start with empty tasks) ──
   const [tasks, setTasks] = useState(() => {
     try {
-      const saved = localStorage.getItem(tasksKey);
+      const saved = localStorage.getItem(`focusflow_tasks_${localStorage.getItem("username") || "user"}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -27,13 +27,18 @@ export const AppProvider = ({ children }) => {
   const saveTasks = (newTasks) => {
     setTasks(newTasks);
     try {
-      localStorage.setItem(tasksKey, JSON.stringify(newTasks));
+      localStorage.setItem(`focusflow_tasks_${currentUser}`, JSON.stringify(newTasks));
     } catch (e) {}
   };
 
   // ── Fetch Dashboard Stats from API ──
   const refreshStats = useCallback(async () => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setStats(null);
+        return;
+      }
       const data = await getDashboardStats();
       setStats(data);
     } catch (err) {
@@ -46,19 +51,45 @@ export const AppProvider = ({ children }) => {
   // ── Fetch Tasks from API ──
   const fetchTasks = useCallback(async () => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
       const res = await instance.get("/tasks");
       if (Array.isArray(res.data)) {
-        saveTasks(res.data);
+        setTasks(res.data);
+        localStorage.setItem(`focusflow_tasks_${currentUser}`, JSON.stringify(res.data));
       }
     } catch (err) {
       console.error("Task fetch error:", err);
     }
-  }, [tasksKey]);
+  }, [currentUser]);
 
+  // Sync state whenever user logs in or switches account
   useEffect(() => {
     fetchTasks();
     refreshStats();
-  }, [fetchTasks, refreshStats]);
+  }, [currentUser, fetchTasks, refreshStats]);
+
+  const switchUser = (newUsername) => {
+    const user = newUsername || "user";
+    setCurrentUser(user);
+    try {
+      const saved = localStorage.getItem(`focusflow_tasks_${user}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setTasks(parsed);
+      } else {
+        setTasks([]);
+      }
+    } catch (e) {
+      setTasks([]);
+    }
+  };
+
+  const clearSession = () => {
+    setCurrentUser("user");
+    setTasks([]);
+    setStats(null);
+  };
 
   // ── Add Task ──
   const addTask = async (newTaskText) => {
@@ -152,6 +183,9 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider
       value={{
+        currentUser,
+        switchUser,
+        clearSession,
         tasks,
         stats,
         statsLoading,

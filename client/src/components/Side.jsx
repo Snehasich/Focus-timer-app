@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
-import { Timer, House, TimerReset, LayoutDashboard, LogOut, Calendar, NotebookPen, Flame, PanelLeftClose } from "lucide-react";
+import { Timer, House, TimerReset, LayoutDashboard, LogOut, Calendar, NotebookPen, Flame, PanelLeftClose, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { logout } from "../services/authService";
 import { useTheme } from "../context/ThemeContext";
@@ -12,7 +12,7 @@ import { useApp } from "../context/AppContext";
 export const Side = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { stats } = useApp();
+  const { stats, clearSession } = useApp();
   const [username, setUsername] = useState("Username");
   const [localStreak, setLocalStreak] = useState(1);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -22,6 +22,7 @@ export const Side = () => {
 
   const handleConfirmLogout = () => {
     logout();
+    if (clearSession) clearSession();
     navigate("/login");
   };
 
@@ -138,6 +139,10 @@ export const Side = () => {
 
           <button onClick={() => handleNavigate("/notes")} className={getClass("/notes")}>
             <NotebookPen size={18} /> Notes
+          </button>
+
+          <button onClick={() => handleNavigate("/focus-ai")} className={getClass("/focus-ai")}>
+            <Sparkles size={18} /> Focus Ai
           </button>
 
           <button onClick={() => handleNavigate("/dashboard")} className={getClass("/dashboard")}>

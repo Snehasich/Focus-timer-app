@@ -31,7 +31,7 @@ public class UserActivityService {
 
         LocalDate today = LocalDate.now();
         UserActivity activity = activityRepo
-                .findByUsernameAndActivityDate(username, today)
+                .findByUsernameIgnoreCaseAndActivityDate(username.trim(), today)
                 .orElseGet(() -> {
                     UserActivity a = new UserActivity();
                     a.setUsername(username);
@@ -61,7 +61,7 @@ public class UserActivityService {
 
         LocalDate today = LocalDate.now();
         UserActivity activity = activityRepo
-                .findByUsernameAndActivityDate(username, today)
+                .findByUsernameIgnoreCaseAndActivityDate(username.trim(), today)
                 .orElseGet(() -> {
                     UserActivity a = new UserActivity();
                     a.setUsername(username);
@@ -89,7 +89,7 @@ public class UserActivityService {
 
         // All activity in last 12 months for this user
         List<UserActivity> allActivity = activityRepo
-                .findByUsernameAndActivityDateBetween(username, yearAgo, today);
+                .findByUsernameIgnoreCaseAndActivityDateBetween(username.trim(), yearAgo, today);
 
         // Map date -> activity
         Map<LocalDate, UserActivity> activityMap = allActivity.stream()
@@ -110,7 +110,7 @@ public class UserActivityService {
         }
 
         // ── Max Streak (Real maximum consecutive streak in history) ──
-        List<UserActivity> allSorted = activityRepo.findByUsernameOrderByActivityDateAsc(username);
+        List<UserActivity> allSorted = activityRepo.findByUsernameIgnoreCaseOrderByActivityDateAsc(username.trim());
         int maxStreak = 0, tempStreak = 0;
         LocalDate prev = null;
         for (UserActivity a : allSorted) {
@@ -137,7 +137,7 @@ public class UserActivityService {
         long focusSecondsToday = todayAct != null ? todayAct.getFocusSeconds() : 0L;
 
         // ── Task counts (real from DB for this user) ──
-        List<Task> tasks = taskRepo.findByUsername(username);
+        List<Task> tasks = taskRepo.findByUsernameIgnoreCase(username.trim());
         long completedTasks = tasks.stream().filter(Task::isCompleted).count();
         long totalTasks = tasks.size();
 

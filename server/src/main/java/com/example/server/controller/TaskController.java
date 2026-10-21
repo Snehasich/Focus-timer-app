@@ -8,6 +8,7 @@ import com.example.server.entity.Task;
 import com.example.server.service.TaskService;
 
 import java.util.List;
+import java.util.Map;
 
 @RequestMapping("/tasks")
 @RestController
@@ -35,7 +36,7 @@ public class TaskController {
         return ResponseEntity.ok(tasks);
     }
 
-    // ➕ CREATE TASK (assign to logged-in user or Guest)
+    // ➕ CREATE TASK (assign to logged-in user)
     @PostMapping
     public ResponseEntity<Task> addTask(@RequestBody Task task, Authentication authentication) {
         String username = getUsername(authentication);
@@ -47,20 +48,38 @@ public class TaskController {
 
     // ✏️ UPDATE TASK (only if belongs to user)
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id,
+    public ResponseEntity<?> updateTask(@PathVariable Long id,
                                            @RequestBody Task task,
                                            Authentication authentication) {
         String username = getUsername(authentication);
-        Task updated = service.updateTaskForUser(id, task, username);
-        return ResponseEntity.ok(updated);
+        try {
+            Task updated = service.updateTaskForUser(id, task, username);
+            return ResponseEntity.ok(updated);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
     }
 
     // ❌ DELETE TASK (only if belongs to user)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id,
+    public ResponseEntity<?> deleteTask(@PathVariable Long id,
                                            Authentication authentication) {
         String username = getUsername(authentication);
-        service.deleteTaskForUser(id, username);
-        return ResponseEntity.ok().build();
+        try {
+            service.deleteTaskForUser(id, username);
+            return ResponseEntity.ok().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    // ⚡ BULK ACTION (only affects current authenticated user's tasks)
+    @PostMapping("/bulk")
+    public ResponseEntity<List<Task>> bulkAction(@RequestBody Map<String, String> body,
+                                                 Authentication authentication) {
+        String username = getUsername(authentication);
+        String action = body.getOrDefault("action", "");
+        List<Task> updatedTasks = service.executeBulkAction(action, username);
+        return ResponseEntity.ok(updatedTasks);
     }
 }

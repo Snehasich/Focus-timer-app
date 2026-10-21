@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { NotebookPen, ArrowDownUp, SlidersHorizontal, Ellipsis, Sun, Moon } from "lucide-react";
 import { Dropdown } from "./Dropdown";
 import geminiIcon from "../assets/gemini-icon.png";
@@ -11,6 +12,7 @@ export const TaskRoute = memo(({
   onSortChange, 
   onBulkAction 
 }) => {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === "light";
 
@@ -96,17 +98,18 @@ export const TaskRoute = memo(({
           {isLight ? <Moon size={16} /> : <Sun size={16} />}
         </button>
 
-        {/* Ask Me Button */}
+        {/* Focus AI Button */}
         <div
           className={`h-[40px] sm:h-[44px] px-3 sm:px-3.5 rounded-full flex items-center border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${
             isLight 
               ? "bg-white border-slate-300 text-gray-900 hover:bg-slate-100 shadow-sm" 
               : "bg-[#161616] border-[#2a2a2a] text-white hover:bg-[#1e1e2e]"
           }`}
-          onClick={() => alert("AI Assistant features integrated in Notes module!")}
+          onClick={() => navigate("/focus-ai")}
+          title="Open Focus AI Assistant"
         >
           <img src={geminiIcon} alt="Gemini Logo" className="w-4 h-4 mr-1.5" />
-          <span className="text-[13px] sm:text-[14px] font-bold tracking-wide">Ask Me</span>
+          <span className="text-[13px] sm:text-[14px] font-bold tracking-wide">Focus AI</span>
         </div>
       </div>
     </div>

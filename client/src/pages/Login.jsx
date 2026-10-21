@@ -3,6 +3,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../services/authService";
 import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useApp } from "../context/AppContext";
+import focusflowLogoDark from "../assets/focusflow-logo-dark.png";
+import focusflowLogoLight from "../assets/focusflow-logo-light.png";
 
 function Login() {
   const [form, setForm]               = useState({ username: "", password: "" });
@@ -14,6 +17,7 @@ function Login() {
   const [step, setStep]               = useState(0);
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { switchUser } = useApp();
 
   // Stagger entrance
   useEffect(() => {
@@ -47,8 +51,12 @@ function Login() {
     setServerError("");
     try {
       const res = await loginUser({ username: form.username.trim(), password: form.password.trim() });
-      if (res.data.token) navigate("/");
-      else setServerError("Login failed. Please check your credentials.");
+      if (res.data.token) {
+        if (switchUser) switchUser(res.data.username || form.username.trim());
+        navigate("/");
+      } else {
+        setServerError("Login failed. Please check your credentials.");
+      }
     } catch (err) {
       console.error(err);
       if (err.response?.status === 401) {
@@ -118,53 +126,79 @@ function Login() {
         input::placeholder{color: ${isLight ? "#94A3B8" : "#2e2e3a"}}
         .login-btn{transition:all 0.2s ease}
         .login-btn:not(:disabled):hover{filter:brightness(1.12);box-shadow:0 6px 24px rgba(124,58,237,0.5)!important}
-        .login-btn:not(:disabled):active{transform:scale(0.97)}
       `}</style>
 
+      {/* Outer viewport */}
       <div style={{
-        minHeight:"100vh", display:"flex", alignItems:"center",
-        justifyContent:"center", background: isLight ? "#e2e8f0" : "#070710",
-        position:"relative", overflow:"hidden", padding:24,
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: isLight ? "#f1f5f9" : "#08080f",
+        position: "relative",
+        overflow: "hidden",
+        padding: "24px 16px",
+        boxSizing: "border-box",
+        fontFamily: "'Inter', sans-serif",
       }}>
-        {/* Blobs */}
-        <div className="blob1" style={{position:"absolute",top:"-10%",left:"-5%",width:420,height:420,borderRadius:"50%",background: isLight ? "radial-gradient(circle,rgba(124,58,237,0.07) 0%,transparent 65%)" : "radial-gradient(circle,rgba(124,58,237,0.18) 0%,transparent 65%)",pointerEvents:"none"}}/>
-        <div className="blob2" style={{position:"absolute",bottom:"-15%",right:"-5%",width:480,height:480,borderRadius:"50%",background: isLight ? "radial-gradient(circle,rgba(37,99,235,0.06) 0%,transparent 65%)" : "radial-gradient(circle,rgba(37,99,235,0.15) 0%,transparent 65%)",pointerEvents:"none"}}/>
-        <div className="blob3" style={{position:"absolute",top:"40%",right:"20%",width:280,height:280,borderRadius:"50%",background: isLight ? "radial-gradient(circle,rgba(6,182,212,0.04) 0%,transparent 65%)" : "radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 65%)",pointerEvents:"none"}}/>
 
+        {/* Ambient background glows */}
+        <div className="blob1" style={{position:"absolute",width:420,height:420,borderRadius:"50%",background:"radial-gradient(circle,rgba(124,58,237,0.14) 0%,transparent 70%)",top:"10%",left:"15%",pointerEvents:"none"}}/>
+        <div className="blob2" style={{position:"absolute",width:380,height:380,borderRadius:"50%",background:"radial-gradient(circle,rgba(37,99,235,0.12) 0%,transparent 70%)",bottom:"12%",right:"12%",pointerEvents:"none"}}/>
+        <div className="blob3" style={{position:"absolute",width:280,height:280,borderRadius:"50%",background:"radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 70%)",top:"55%",left:"40%",pointerEvents:"none"}}/>
+
+        {/* Grid pattern overlay */}
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: isLight
+            ? "radial-gradient(rgba(0,0,0,0.06) 1px, transparent 1px)"
+            : "radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+          pointerEvents: "none",
+        }}/>
+
+        {/* Card wrapper */}
         <div style={{width:"100%",maxWidth:400,position:"relative",zIndex:1}}>
 
-          {/* Logo */}
-          <div style={{...fadeUp(0),textAlign:"center",marginBottom:32}}>
-            <div style={{width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#7c3aed,#2563eb)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:18,boxShadow:"0 0 32px rgba(124,58,237,0.4),0 8px 20px rgba(0,0,0,0.4)"}}>⏱</div>
-            <h1 style={{color: isLight ? "#111827" : "#f1f1ff",fontSize:"1.55rem",fontWeight:700,letterSpacing:"-0.5px",margin:"0 0 6px"}}>Sign in to Focus</h1>
-            <p style={{color: isLight ? "#4b5563" : "#4a4a6a",fontSize:"0.85rem",margin:0}}>Welcome back — let's get productive</p>
+          {/* Logo & Header */}
+          <div style={{...fadeUp(0),textAlign:"center",marginBottom:28}}>
+            <img 
+              src={isLight ? focusflowLogoLight : focusflowLogoDark} 
+              alt="FocusFlow Logo" 
+              className="w-14 h-14 rounded-2xl mx-auto mb-3.5 shadow-xl transition-transform hover:scale-105 duration-200"
+            />
+            <h1 style={{color: isLight ? "#0f172a" : "#fff",fontWeight:800,fontSize:"1.55rem",margin:"0 0 6px",letterSpacing:"-0.03em"}}>
+              Welcome back
+            </h1>
+            <p style={{color: isLight ? "#64748b" : "#4a4a68",fontSize:"0.84rem",margin:0}}>
+              Sign in to continue your focus journey
+            </p>
           </div>
 
-          {/* Animated border card */}
-          <div style={{...fadeUp(1),borderRadius:18,padding:1.5}} className="shine-border">
-            <div style={{background: isLight ? "#ffffff" : "rgba(10,10,20,0.93)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderRadius:17,padding:"30px 28px 26px",position:"relative",overflow:"hidden",boxShadow: isLight ? "0 10px 30px rgba(0,0,0,0.03)" : "none"}}>
-              <div style={{position:"absolute",top:0,left:0,right:0,height:1,background: isLight ? "linear-gradient(90deg,transparent,rgba(0,0,0,0.04),transparent)" : "linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)"}}/>
+          {/* Animated card border */}
+          <div style={{...fadeUp(1),padding:1,borderRadius:18}} className="shine-border">
+            <div style={{
+              background: isLight ? "#ffffff" : "#0d0d18",
+              borderRadius: 17,
+              padding: "26px 22px",
+              boxShadow: isLight ? "0 10px 25px -5px rgba(0, 0, 0, 0.05)" : "none",
+            }}>
+              <form onSubmit={handleSubmit} style={{display:"flex",flexDirection:"column",gap:15}} noValidate>
 
-              <form
-                onSubmit={handleSubmit}
-                noValidate
-                style={{display:"flex",flexDirection:"column",gap:16}}
-              >
                 {/* Username */}
                 <div style={fadeUp(2)}>
-                  <label htmlFor="login-username" style={{display:"block",color: isLight ? "#6B7280" : "#6b6b8a",fontSize:"0.76rem",fontWeight:600,marginBottom:7,letterSpacing:"0.07em",textTransform:"uppercase"}}>
+                  <label style={{display:"block",color: isLight ? "#334155" : "#6a6a8a",fontSize:"0.76rem",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:7}}>
                     Username
                   </label>
                   <input
-                    id="login-username"
-                    name="username"
                     type="text"
+                    name="username"
                     autoComplete="username"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck="false"
-                    placeholder="your username"
                     value={form.username}
+                    placeholder="Enter your username"
                     onChange={(e) => handleChange("username", e.target.value)}
                     onFocus={() => setFocused("username")}
                     onBlur={() => setFocused(null)}
@@ -175,20 +209,21 @@ function Login() {
 
                 {/* Password */}
                 <div style={fadeUp(3)}>
-                  <label htmlFor="login-password" style={{display:"block",color: isLight ? "#6B7280" : "#6b6b8a",fontSize:"0.76rem",fontWeight:600,marginBottom:7,letterSpacing:"0.07em",textTransform:"uppercase"}}>
-                    Password
-                  </label>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                    <label style={{color: isLight ? "#334155" : "#6a6a8a",fontSize:"0.76rem",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}}>
+                      Password
+                    </label>
+                  </div>
                   <div style={{position:"relative"}}>
                     <input
-                      id="login-password"
-                      name="password"
                       type={showPassword ? "text" : "password"}
+                      name="password"
                       autoComplete="current-password"
                       autoCapitalize="none"
                       autoCorrect="off"
                       spellCheck="false"
-                      placeholder="your password"
                       value={form.password}
+                      placeholder="••••••••"
                       onChange={(e) => handleChange("password", e.target.value)}
                       onFocus={() => setFocused("password")}
                       onBlur={() => setFocused(null)}
@@ -196,7 +231,7 @@ function Login() {
                     />
                     <button
                       type="button"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      tabIndex={-1}
                       onClick={() => setShowPassword((v) => !v)}
                       style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color: isLight ? "#94A3B8" : "#3a3a5a",display:"flex",padding:2,transition:"color 0.2s"}}
                       onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#4B5563" : "#7c7ca0"}
