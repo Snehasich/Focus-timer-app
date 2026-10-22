@@ -42,13 +42,15 @@ export const TaskRouteTask = memo(({
     return true;
   });
 
-  // ── SORT TASKS ──
+  // ── SORT TASKS (Safe & Fast) ──
   const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const textA = (a.text || "").trim();
+    const textB = (b.text || "").trim();
     if (sortBy === "A-Z (Alphabetical)") {
-      return a.text.localeCompare(b.text);
+      return textA.localeCompare(textB);
     }
     if (sortBy === "Z-A (Reverse)") {
-      return b.text.localeCompare(a.text);
+      return textB.localeCompare(textA);
     }
     if (sortBy === "Completed First") {
       if (a.completed && !b.completed) return -1;

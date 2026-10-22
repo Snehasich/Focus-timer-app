@@ -12,8 +12,8 @@ import { useApp } from "../context/AppContext";
 export const Side = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { stats, clearSession } = useApp();
-  const [username, setUsername] = useState("Username");
+  const { stats, clearSession, currentName } = useApp();
+  const [username, setUsername] = useState("User");
   const [localStreak, setLocalStreak] = useState(1);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { theme, sidebarOpen, toggleSidebar } = useTheme();
@@ -27,7 +27,7 @@ export const Side = () => {
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem("username") || "Username";
+    const stored = currentName || localStorage.getItem("name") || localStorage.getItem("username") || "User";
     setUsername(stored);
 
     const now = new Date();

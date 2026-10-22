@@ -5,13 +5,18 @@ import { getDashboardStats, logLogin } from "../services/activityService";
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(() => localStorage.getItem("username") || "user");
-  const tasksKey = `focusflow_tasks_${currentUser}`;
+  const [currentUser, setCurrentUser] = useState(() => 
+    localStorage.getItem("email") || localStorage.getItem("username") || "user"
+  );
+  const [currentName, setCurrentName] = useState(() => 
+    localStorage.getItem("name") || localStorage.getItem("username") || "User"
+  );
 
-  // ── Global Tasks State (New users start with empty tasks) ──
+  // ── Global Tasks State (User isolated) ──
   const [tasks, setTasks] = useState(() => {
     try {
-      const saved = localStorage.getItem(`focusflow_tasks_${localStorage.getItem("username") || "user"}`);
+      const activeUser = localStorage.getItem("email") || localStorage.getItem("username") || "user";
+      const saved = localStorage.getItem(`focusflow_tasks_${activeUser}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -69,11 +74,13 @@ export const AppProvider = ({ children }) => {
     refreshStats();
   }, [currentUser, fetchTasks, refreshStats]);
 
-  const switchUser = (newUsername) => {
-    const user = newUsername || "user";
-    setCurrentUser(user);
+  const switchUser = (newUserEmail, newUserName) => {
+    const userEmail = newUserEmail || "user";
+    const userName = newUserName || userEmail.split("@")[0] || "User";
+    setCurrentUser(userEmail);
+    setCurrentName(userName);
     try {
-      const saved = localStorage.getItem(`focusflow_tasks_${user}`);
+      const saved = localStorage.getItem(`focusflow_tasks_${userEmail}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) setTasks(parsed);
@@ -87,11 +94,12 @@ export const AppProvider = ({ children }) => {
 
   const clearSession = () => {
     setCurrentUser("user");
+    setCurrentName("User");
     setTasks([]);
     setStats(null);
   };
 
-  // ── Add Task ──
+  // ── Add Task (Instant optimistic UI) ──
   const addTask = async (newTaskText) => {
     if (!newTaskText || newTaskText.trim() === "") return;
     const text = newTaskText.trim();
@@ -107,14 +115,13 @@ export const AppProvider = ({ children }) => {
           prev.map((t) => (t.id === tempId ? { ...t, id: res.data.id } : t))
         );
       }
-      logLogin().catch(() => {});
       refreshStats();
     } catch (err) {
       console.error("Error creating task:", err);
     }
   };
 
-  // ── Toggle Task Completed ──
+  // ── Toggle Task Completed (Instant optimistic UI) ──
   const toggleTask = async (task) => {
     const nextCompleted = !task.completed;
     const updated = tasks.map((t) =>
@@ -127,14 +134,13 @@ export const AppProvider = ({ children }) => {
         text: task.text,
         completed: nextCompleted,
       });
-      logLogin().catch(() => {});
       refreshStats();
     } catch (err) {
       console.error("Error toggling task:", err);
     }
   };
 
-  // ── Delete Task ──
+  // ── Delete Task (Instant optimistic UI) ──
   const deleteTask = async (taskId) => {
     const updated = tasks.filter((t) => t.id !== taskId);
     saveTasks(updated);
@@ -147,15 +153,25 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // ── Bulk Actions ──
-  const executeBulkAction = async (action) => {
-    if (!action) return;
+  // ── Bulk Actions (Instant optimistic UI + fast backend sync) ──
+  const executeBulkAction = async (rawAction) => {
+    if (!rawAction) return;
+    const action = String(rawAction).trim().toLowerCase().replace(/\s+/g, "-").replace(/_/g, "-");
 
     if (action === "mark-all-completed") {
       const updated = tasks.map((t) => ({ ...t, completed: true }));
       saveTasks(updated);
       try {
         await instance.post("/tasks/bulk", { action: "mark-all-completed" });
+        refreshStats();
+      } catch (e) {
+        console.error("Bulk action failed:", e);
+      }
+    } else if (action === "mark-all-active") {
+      const updated = tasks.map((t) => ({ ...t, completed: false }));
+      saveTasks(updated);
+      try {
+        await instance.post("/tasks/bulk", { action: "mark-all-active" });
         refreshStats();
       } catch (e) {
         console.error("Bulk action failed:", e);
@@ -169,7 +185,7 @@ export const AppProvider = ({ children }) => {
       } catch (e) {
         console.error("Bulk action failed:", e);
       }
-    } else if (action === "delete-all") {
+    } else if (action === "delete-all" || action === "reset-all-tasks") {
       saveTasks([]);
       try {
         await instance.post("/tasks/bulk", { action: "delete-all" });
@@ -184,6 +200,7 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         currentUser,
+        currentName,
         switchUser,
         clearSession,
         tasks,

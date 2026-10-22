@@ -36,21 +36,19 @@ public class TaskController {
         return ResponseEntity.ok(tasks);
     }
 
-    // ➕ CREATE TASK (assign to logged-in user)
+    // ➕ CREATE TASK (assign to logged-in user with foreign key)
     @PostMapping
     public ResponseEntity<Task> addTask(@RequestBody Task task, Authentication authentication) {
         String username = getUsername(authentication);
-        task.setUsername(username); // 🔐 assign owner
-
-        Task savedTask = service.createTasks(task);
+        Task savedTask = service.createTasks(task, username);
         return ResponseEntity.ok(savedTask);
     }
 
     // ✏️ UPDATE TASK (only if belongs to user)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTask(@PathVariable Long id,
-                                           @RequestBody Task task,
-                                           Authentication authentication) {
+                                         @RequestBody Task task,
+                                         Authentication authentication) {
         String username = getUsername(authentication);
         try {
             Task updated = service.updateTaskForUser(id, task, username);
@@ -63,7 +61,7 @@ public class TaskController {
     // ❌ DELETE TASK (only if belongs to user)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTask(@PathVariable Long id,
-                                           Authentication authentication) {
+                                         Authentication authentication) {
         String username = getUsername(authentication);
         try {
             service.deleteTaskForUser(id, username);
@@ -76,7 +74,7 @@ public class TaskController {
     // ⚡ BULK ACTION (only affects current authenticated user's tasks)
     @PostMapping("/bulk")
     public ResponseEntity<List<Task>> bulkAction(@RequestBody Map<String, String> body,
-                                                 Authentication authentication) {
+                                                  Authentication authentication) {
         String username = getUsername(authentication);
         String action = body.getOrDefault("action", "");
         List<Task> updatedTasks = service.executeBulkAction(action, username);

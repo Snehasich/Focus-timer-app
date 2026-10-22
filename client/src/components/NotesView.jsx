@@ -19,7 +19,7 @@ export const NotesView = () => {
   const editorRef = useRef(null);
 
   const { currentUser } = useApp();
-  const currentUsername = currentUser || localStorage.getItem("username") || "user";
+  const currentUsername = currentUser || localStorage.getItem("email") || localStorage.getItem("username") || "user";
   const notesStorageKey = `focusflow_notes_${currentUsername}`;
 
   const DEFAULT_WELCOME_NOTE = {

@@ -8,7 +8,7 @@ import focusflowLogoDark from "../assets/focusflow-logo-dark.png";
 import focusflowLogoLight from "../assets/focusflow-logo-light.png";
 
 function Login() {
-  const [form, setForm]               = useState({ username: "", password: "" });
+  const [form, setForm]               = useState({ email: "", password: "" });
   const [errors, setErrors]           = useState({});
   const [serverError, setServerError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,9 +29,15 @@ function Login() {
   // ── Inline validation ──────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.username.trim())          e.username = "Username is required.";
-    else if (form.username.trim().length < 3) e.username = "Min 3 characters.";
-    if (!form.password)                 e.password = "Password is required.";
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!form.email.trim()) {
+      e.email = "Email address is required.";
+    } else if (!emailRegex.test(form.email.trim())) {
+      e.email = "Please enter a valid email address.";
+    }
+    if (!form.password) {
+      e.password = "Password is required.";
+    }
     return e;
   };
 
@@ -50,17 +56,18 @@ function Login() {
     setLoading(true);
     setServerError("");
     try {
-      const res = await loginUser({ username: form.username.trim(), password: form.password.trim() });
-      if (res.data.token) {
-        if (switchUser) switchUser(res.data.username || form.username.trim());
+      const cleanEmail = form.email.trim().toLowerCase();
+      const res = await loginUser({ email: cleanEmail, password: form.password.trim() });
+      if (res.data?.token) {
+        if (switchUser) switchUser(res.data.email || cleanEmail, res.data.name);
         navigate("/");
       } else {
         setServerError("Login failed. Please check your credentials.");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       if (err.response?.status === 401) {
-        setServerError("Incorrect username or password.");
+        setServerError("Incorrect email or password.");
       } else if (!err.response) {
         setServerError("Cannot reach backend server. Please check your network connection.");
       } else {
@@ -123,7 +130,7 @@ function Login() {
         .shine-border{background:linear-gradient(270deg,#7c3aed,#2563eb,#06b6d4,#7c3aed);background-size:300% 300%;animation:borderShine 5s ease infinite}
         .shake{animation:shake 0.35s ease}
         .field-err{animation:errIn 0.2s ease forwards;color:#f87171;font-size:0.73rem;margin-top:5px;display:block}
-        input::placeholder{color: ${isLight ? "#94A3B8" : "#2e2e3a"}}
+        input::placeholder{color: ${isLight ? "#94A3B8" : "#4a4a68"}}
         .login-btn{transition:all 0.2s ease}
         .login-btn:not(:disabled):hover{filter:brightness(1.12);box-shadow:0 6px 24px rgba(124,58,237,0.5)!important}
       `}</style>
@@ -170,8 +177,8 @@ function Login() {
             <h1 style={{color: isLight ? "#0f172a" : "#fff",fontWeight:800,fontSize:"1.55rem",margin:"0 0 6px",letterSpacing:"-0.03em"}}>
               Welcome back
             </h1>
-            <p style={{color: isLight ? "#64748b" : "#4a4a68",fontSize:"0.84rem",margin:0}}>
-              Sign in to continue your focus journey
+            <p style={{color: isLight ? "#64748b" : "#6b7280",fontSize:"0.84rem",margin:0}}>
+              Sign in with your email to continue your journey
             </p>
           </div>
 
@@ -185,32 +192,32 @@ function Login() {
             }}>
               <form onSubmit={handleSubmit} style={{display:"flex",flexDirection:"column",gap:15}} noValidate>
 
-                {/* Username */}
+                {/* Email Address */}
                 <div style={fadeUp(2)}>
-                  <label style={{display:"block",color: isLight ? "#334155" : "#6a6a8a",fontSize:"0.76rem",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:7}}>
-                    Username
+                  <label style={{display:"block",color: isLight ? "#334155" : "#94a3b8",fontSize:"0.76rem",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:7}}>
+                    Email Address
                   </label>
                   <input
-                    type="text"
-                    name="username"
-                    autoComplete="username"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck="false"
-                    value={form.username}
-                    placeholder="Enter your username"
-                    onChange={(e) => handleChange("username", e.target.value)}
-                    onFocus={() => setFocused("username")}
+                    value={form.email}
+                    placeholder="you@example.com"
+                    onChange={(e) => handleChange("email", e.target.value)}
+                    onFocus={() => setFocused("email")}
                     onBlur={() => setFocused(null)}
-                    style={inputStyle("username")}
+                    style={inputStyle("email")}
                   />
-                  {errors.username && <span className="field-err">⚠ {errors.username}</span>}
+                  {errors.email && <span className="field-err">⚠ {errors.email}</span>}
                 </div>
 
                 {/* Password */}
                 <div style={fadeUp(3)}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
-                    <label style={{color: isLight ? "#334155" : "#6a6a8a",fontSize:"0.76rem",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}}>
+                    <label style={{color: isLight ? "#334155" : "#94a3b8",fontSize:"0.76rem",fontWeight:600,letterSpacing:"0.06em",textTransform:"uppercase"}}>
                       Password
                     </label>
                   </div>
@@ -233,9 +240,9 @@ function Login() {
                       type="button"
                       tabIndex={-1}
                       onClick={() => setShowPassword((v) => !v)}
-                      style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color: isLight ? "#94A3B8" : "#3a3a5a",display:"flex",padding:2,transition:"color 0.2s"}}
-                      onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#4B5563" : "#7c7ca0"}
-                      onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#94A3B8" : "#3a3a5a"}
+                      style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color: isLight ? "#94A3B8" : "#64748b",display:"flex",padding:2,transition:"color 0.2s"}}
+                      onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#4B5563" : "#cbd5e1"}
+                      onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#94A3B8" : "#64748b"}
                     >
                       {showPassword ? <EyeOff size={15}/> : <Eye size={15}/>}
                     </button>
@@ -260,7 +267,7 @@ function Login() {
                       width:"100%",padding:"12px",borderRadius:10,border:"none",
                       cursor: loading ? "not-allowed" : "pointer",
                       background: loading ? "rgba(124,58,237,0.25)" : "linear-gradient(135deg,#7c3aed,#2563eb)",
-                      color: loading ? "#5a5a8a" : "#fff",
+                      color: loading ? "#a78bfa" : "#fff",
                       fontWeight:600,fontSize:"0.9rem",
                       display:"flex",alignItems:"center",justifyContent:"center",gap:8,
                       boxShadow: loading ? "none" : "0 4px 18px rgba(124,58,237,0.38)",
@@ -280,11 +287,11 @@ function Login() {
           </div>
 
           {/* Footer */}
-          <p style={{...fadeUp(4),textAlign:"center",color: isLight ? "#6B7280" : "#3a3a5a",fontSize:"0.82rem",marginTop:22}}>
+          <p style={{...fadeUp(4),textAlign:"center",color: isLight ? "#6B7280" : "#64748b",fontSize:"0.82rem",marginTop:22}}>
             Don't have an account?{" "}
-            <Link to="/register" style={{color: isLight ? "#7c3aed" : "#7c5dc7",textDecoration:"none",fontWeight:600}}
-              onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#6d28d9" : "#a78bfa"}
-              onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#7c3aed" : "#7c5dc7"}
+            <Link to="/register" style={{color: isLight ? "#7c3aed" : "#a78bfa",textDecoration:"none",fontWeight:600}}
+              onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#6d28d9" : "#c4b5fd"}
+              onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#7c3aed" : "#a78bfa"}
             >Create one →</Link>
           </p>
         </div>

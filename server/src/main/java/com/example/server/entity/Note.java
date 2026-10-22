@@ -1,10 +1,12 @@
 package com.example.server.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "notes", indexes = {
-    @Index(name = "idx_notes_username", columnList = "username")
+    @Index(name = "idx_notes_username", columnList = "username"),
+    @Index(name = "idx_notes_user_id", columnList = "user_id")
 })
 public class Note {
 
@@ -14,6 +16,12 @@ public class Note {
 
     @Column(nullable = false)
     private String username;
+
+    // 🔗 Relational Foreign Key to Users table
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private Users user;
 
     private String title;
 
@@ -48,6 +56,14 @@ public class Note {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public Users getUser() {
+        return user;
+    }
+
+    public void setUser(Users user) {
+        this.user = user;
     }
 
     public String getTitle() {

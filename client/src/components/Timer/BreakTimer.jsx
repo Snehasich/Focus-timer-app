@@ -38,14 +38,19 @@ const BreakTimer = () => {
       setIsRunning(false);
       setStartedAt(null);
     } else {
-      setStartedAt(Date.now() - (initialTime - time) * 1000);
+      const activeTotal = (!startedAt && time > 0) ? time : (initialTime || time || 600);
+      if (setBreakInitialTime && initialTime !== activeTotal) {
+        setBreakInitialTime(activeTotal);
+      }
+      setStartedAt(Date.now() - (activeTotal - time) * 1000);
       setIsRunning(true);
     }
   };
 
   const handleReset = () => {
     setIsRunning(false);
-    setTime(initialTime);
+    const resetTo = initialTime || 600;
+    setTime(resetTo);
     setStartedAt(null);
   };
 
@@ -55,10 +60,12 @@ const BreakTimer = () => {
     return `${m}:${s}`;
   };
 
-  const progress   = time / initialTime;
+  // ── Ring Calculation (Guaranteed Full Emerald Border with Smooth Reduction) ──
+  const sessionTotal = (initialTime && initialTime >= time) ? initialTime : Math.max(time, 60);
+  const progress = Math.max(0, Math.min(1, sessionTotal > 0 ? time / sessionTotal : 1));
   const dashOffset = CIRCUMFERENCE * (1 - progress);
 
-  const angle = -90 + 360 * (1 - progress);
+  const angle = -90 + 360 * progress;
   const dotX  = CENTER + RADIUS * Math.cos((angle * Math.PI) / 180);
   const dotY  = CENTER + RADIUS * Math.sin((angle * Math.PI) / 180);
 
@@ -81,8 +88,8 @@ const BreakTimer = () => {
               <stop offset="0%"   stopColor="#10b981" />
               <stop offset="100%" stopColor="#059669" />
             </linearGradient>
-            <filter id="emeraldGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#10b981" floodOpacity="0.8" />
+            <filter id="emeraldGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#10b981" floodOpacity="0.75" />
             </filter>
           </defs>
 
@@ -105,15 +112,23 @@ const BreakTimer = () => {
             strokeDashoffset={dashOffset}
             transform={`rotate(-90 ${CENTER} ${CENTER})`}
             filter="url(#emeraldGlow)"
-            className="transition-[stroke-dashoffset] duration-1000 ease-linear"
+            style={{
+              transition: isRunning ? "stroke-dashoffset 1s linear" : "stroke-dashoffset 0.3s ease",
+              filter: "drop-shadow(0 0 6px rgba(16, 185, 129, 0.65))"
+            }}
           />
 
           {/* Dot */}
-          {(isRunning || time < initialTime) && (
+          {isRunning && progress > 0.01 && progress < 0.999 && (
             <circle
-              cx={dotX} cy={dotY} r={6}
+              cx={dotX} cy={dotY} r={5.5}
               fill="#34d399"
-              style={{ filter: "drop-shadow(0 0 6px #10b981)" }}
+              stroke="#10b981"
+              strokeWidth={2}
+              style={{ 
+                filter: "drop-shadow(0 0 6px #10b981)",
+                transition: "all 1s linear"
+              }}
             />
           )}
         </svg>
@@ -124,7 +139,7 @@ const BreakTimer = () => {
             className={`text-5xl font-extrabold tracking-tight tabular-nums leading-none transition-transform duration-150 ${
               isRunning ? "animate-pulse" : ""
             } ${btnPulse ? "scale-95" : "scale-100"} ${
-              isLight ? "text-gray-900" : "text-[#e8f8f0]"
+              isLight ? "text-gray-900" : "text-[#e8e8ff]"
             }`}
           >
             {formatTime()}
@@ -134,7 +149,7 @@ const BreakTimer = () => {
               isRunning ? "text-emerald-500" : isLight ? "text-slate-500" : "text-zinc-600"
             }`}
           >
-            {isRunning ? "resting" : time < initialTime ? "paused" : "break time"}
+            {isRunning ? "resting" : time < initialTime ? "paused" : "ready"}
           </span>
         </div>
       </div>

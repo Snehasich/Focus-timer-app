@@ -3,16 +3,37 @@ package com.example.server.entity;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "users", indexes = {
+    @Index(name = "idx_users_email", columnList = "email"),
+    @Index(name = "idx_users_username", columnList = "username")
+})
 public class Users {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ FIXED
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(unique = true) // ✅ FIXED
+    @Column(nullable = false)
+    private String name;
+
+    @Column(unique = true, nullable = false)
+    private String email;
+
+    @Column(unique = true)
     private String username;
 
+    @Column(nullable = false)
     private String password;
+
+    public Users() {}
+
+    public Users(int id, String name, String email, String username, String password) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.username = username;
+        this.password = password;
+    }
 
     public int getId() {
         return id;
@@ -20,6 +41,22 @@ public class Users {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getUsername() {
@@ -42,6 +79,8 @@ public class Users {
     public String toString() {
         return "Users{" +
                 "id=" + id +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
                 ", username='" + username + '\'' +
                 '}';
     }

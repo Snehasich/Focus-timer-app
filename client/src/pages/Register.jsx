@@ -7,7 +7,7 @@ import focusflowLogoDark from "../assets/focusflow-logo-dark.png";
 import focusflowLogoLight from "../assets/focusflow-logo-light.png";
 
 function Register() {
-  const [user, setUser] = useState({ username: "", password: "" });
+  const [user, setUser] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,24 +17,48 @@ function Register() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    [0, 1, 2, 3, 4].forEach((i) =>
-      setTimeout(() => setStep((s) => Math.max(s, i + 1)), i * 100)
+    [0, 1, 2, 3, 4, 5].forEach((i) =>
+      setTimeout(() => setStep((s) => Math.max(s, i + 1)), i * 90)
     );
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!user.username.trim() || !user.password.trim()) { setError("Please fill in all fields."); return; }
-    if (user.username.trim().length < 3) { setError("Username must be at least 3 characters."); return; }
-    if (user.password.trim().length < 3) { setError("Password must be at least 3 characters."); return; }
+
+    if (!user.name.trim() || !user.email.trim() || !user.password.trim()) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (user.name.trim().length < 2) {
+      setError("Name must be at least 2 characters.");
+      return;
+    }
+
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(user.email.trim())) {
+      setError("Please provide a valid email address.");
+      return;
+    }
+
+    if (user.password.trim().length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await registerUser({ username: user.username.trim(), password: user.password.trim() });
+      await registerUser({
+        name: user.name.trim(),
+        email: user.email.trim().toLowerCase(),
+        password: user.password.trim()
+      });
       navigate("/login");
     } catch (err) {
       console.error(err.response?.data);
-      setError("Registration failed. Username may already be taken.");
+      const serverMsg = err.response?.data?.message || err.response?.data;
+      setError(typeof serverMsg === "string" ? serverMsg : "Registration failed. An account with this email may already exist.");
     } finally {
       setLoading(false);
     }
@@ -43,8 +67,8 @@ function Register() {
   const getStrength = () => {
     const p = user.password;
     if (!p) return null;
-    if (p.length < 4) return { label: "Weak", color: "#f87171", w: "28%", glow: "rgba(248,113,113,0.2)" };
-    if (p.length < 7) return { label: "Fair", color: "#fbbf24", w: "60%", glow: "rgba(251,191,36,0.2)" };
+    if (p.length < 6) return { label: "Weak", color: "#f87171", w: "28%", glow: "rgba(248,113,113,0.2)" };
+    if (p.length < 9) return { label: "Fair", color: "#fbbf24", w: "60%", glow: "rgba(251,191,36,0.2)" };
     return { label: "Strong", color: "#34d399", w: "100%", glow: "rgba(52,211,153,0.2)" };
   };
   const strength = getStrength();
@@ -98,17 +122,19 @@ function Register() {
           50%  { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        .blob1r { animation: float1 10s ease-in-out infinite; }
-        .blob2r { animation: float2 12s ease-in-out infinite; }
-        .blob3r { animation: float3 8s ease-in-out infinite; }
+        .blob-g1 { animation: float1 10s ease-in-out infinite; }
+        .blob-g2 { animation: float2 13s ease-in-out infinite; }
+        .blob-g3 { animation: float3 15s ease-in-out infinite; }
         .shine-border-green {
-          background: linear-gradient(270deg, #10b981, #2563eb, #8b5cf6, #10b981);
+          background: linear-gradient(270deg, #10b981, #06b6d4, #3b82f6, #10b981);
           background-size: 300% 300%;
           animation: borderShineGreen 6s ease infinite;
         }
-        input::placeholder { color: ${isLight ? "#94A3B8" : "#2e2e3a"}; }
-        .btn-register:hover { filter: brightness(1.1); }
-        .btn-register:active { transform: scale(0.98); }
+        .btn-register:not(:disabled):hover {
+          filter: brightness(1.1);
+          box-shadow: 0 6px 24px rgba(16,185,129,0.45) !important;
+        }
+        input::placeholder { color: ${isLight ? "#94A3B8" : "#4a4a68"}; }
       `}</style>
 
       <div style={{
@@ -116,37 +142,46 @@ function Register() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: isLight ? "#e2e8f0" : "#070710",
+        background: isLight ? "#f1f5f9" : "#08080f",
         position: "relative",
         overflow: "hidden",
-        padding: 24,
+        padding: "24px 16px",
+        boxSizing: "border-box",
+        fontFamily: "'Inter', sans-serif",
       }}>
 
-        {/* Blobs */}
-        <div className="blob1r" style={{
-          position: "absolute", bottom: "-10%", left: "-5%",
-          width: 420, height: 420, borderRadius: "50%",
-          background: isLight ? "radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 65%)" : "radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 65%)",
-          pointerEvents: "none",
+        {/* Floating gradient orbs */}
+        <div className="blob-g1" style={{
+          position: "absolute", width: 440, height: 440, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)",
+          top: "8%", right: "12%", pointerEvents: "none",
         }} />
-        <div className="blob2r" style={{
-          position: "absolute", top: "-10%", right: "-5%",
-          width: 400, height: 400, borderRadius: "50%",
-          background: isLight ? "radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 65%)" : "radial-gradient(circle, rgba(37,99,235,0.13) 0%, transparent 65%)",
-          pointerEvents: "none",
+        <div className="blob-g2" style={{
+          position: "absolute", width: 360, height: 360, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(6,182,212,0.10) 0%, transparent 70%)",
+          bottom: "10%", left: "10%", pointerEvents: "none",
         }} />
-        <div className="blob3r" style={{
-          position: "absolute", top: "35%", left: "15%",
-          width: 260, height: 260, borderRadius: "50%",
-          background: isLight ? "radial-gradient(circle, rgba(139,92,246,0.04) 0%, transparent 65%)" : "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 65%)",
+        <div className="blob-g3" style={{
+          position: "absolute", width: 260, height: 260, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%)",
+          top: "50%", right: "38%", pointerEvents: "none",
+        }} />
+
+        {/* Grid pattern overlay */}
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: isLight
+            ? "radial-gradient(rgba(0,0,0,0.06) 1px, transparent 1px)"
+            : "radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
           pointerEvents: "none",
         }} />
 
-        {/* Card */}
-        <div style={{ width: "100%", maxWidth: 400, position: "relative", zIndex: 1 }}>
+        {/* Main card wrapper */}
+        <div style={{ width: "100%", maxWidth: 410, position: "relative", zIndex: 1 }}>
 
-          {/* Logo */}
-          <div style={{ ...fadeUp(0), textAlign: "center", marginBottom: 32 }}>
+          {/* Logo & Header */}
+          <div style={{ ...fadeUp(0), textAlign: "center", marginBottom: 24 }}>
             <img 
               src={isLight ? focusflowLogoLight : focusflowLogoDark} 
               alt="FocusFlow Logo" 
@@ -161,8 +196,8 @@ function Register() {
             }}>
               Create your account
             </h1>
-            <p style={{ color: isLight ? "#4b5563" : "#4a4a6a", fontSize: "0.85rem", margin: 0 }}>
-              Join Focus and boost your productivity
+            <p style={{ color: isLight ? "#64748b" : "#6b7280", fontSize: "0.85rem", margin: 0 }}>
+              Join FocusFlow and boost your daily productivity
             </p>
           </div>
 
@@ -173,55 +208,71 @@ function Register() {
               backdropFilter: "blur(20px)",
               WebkitBackdropFilter: "blur(20px)",
               borderRadius: 17,
-              padding: "30px 28px 26px",
+              padding: "26px 24px 22px",
               position: "relative",
               overflow: "hidden",
               boxShadow: isLight ? "0 10px 30px rgba(0,0,0,0.03)" : "none",
             }}>
-              {/* Sheen */}
-              <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, height: 1,
-                background: isLight ? "linear-gradient(90deg,transparent,rgba(0,0,0,0.04),transparent)" : "linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)",
-              }} />
+              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 15 }} noValidate>
 
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-
-                {/* Username */}
+                {/* Full Name */}
                 <div style={fadeUp(2)}>
                   <label style={{
-                    display: "block", color: isLight ? "#6B7280" : "#6b6b8a",
+                    display: "block", color: isLight ? "#334155" : "#94a3b8",
                     fontSize: "0.76rem", fontWeight: 600,
-                    marginBottom: 7, letterSpacing: "0.07em", textTransform: "uppercase",
+                    marginBottom: 6, letterSpacing: "0.07em", textTransform: "uppercase",
                   }}>
-                    Username
+                    Full Name
                   </label>
                   <input
-                    placeholder="choose a username"
-                    value={user.username}
-                    autoComplete="username"
+                    placeholder="e.g. Alex Johnson"
+                    value={user.name}
+                    autoComplete="name"
+                    spellCheck="false"
+                    onChange={(e) => setUser({ ...user, name: e.target.value })}
+                    onFocus={() => setFocused("name")}
+                    onBlur={() => setFocused(null)}
+                    style={inputStyle("name")}
+                  />
+                </div>
+
+                {/* Email Address */}
+                <div style={fadeUp(3)}>
+                  <label style={{
+                    display: "block", color: isLight ? "#334155" : "#94a3b8",
+                    fontSize: "0.76rem", fontWeight: 600,
+                    marginBottom: 6, letterSpacing: "0.07em", textTransform: "uppercase",
+                  }}>
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={user.email}
+                    autoComplete="email"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck="false"
-                    onChange={(e) => setUser({ ...user, username: e.target.value })}
-                    onFocus={() => setFocused("username")}
+                    onChange={(e) => setUser({ ...user, email: e.target.value })}
+                    onFocus={() => setFocused("email")}
                     onBlur={() => setFocused(null)}
-                    style={inputStyle("username")}
+                    style={inputStyle("email")}
                   />
                 </div>
 
                 {/* Password */}
-                <div style={fadeUp(3)}>
+                <div style={fadeUp(4)}>
                   <label style={{
-                    display: "block", color: isLight ? "#6B7280" : "#6b6b8a",
+                    display: "block", color: isLight ? "#334155" : "#94a3b8",
                     fontSize: "0.76rem", fontWeight: 600,
-                    marginBottom: 7, letterSpacing: "0.07em", textTransform: "uppercase",
+                    marginBottom: 6, letterSpacing: "0.07em", textTransform: "uppercase",
                   }}>
                     Password
                   </label>
                   <div style={{ position: "relative" }}>
                     <input
                       type={showPassword ? "text" : "password"}
-                      placeholder="choose a password"
+                      placeholder="At least 6 characters"
                       value={user.password}
                       autoComplete="new-password"
                       autoCapitalize="none"
@@ -239,11 +290,11 @@ function Register() {
                         position: "absolute", right: 12, top: "50%",
                         transform: "translateY(-50%)",
                         background: "none", border: "none", cursor: "pointer",
-                        color: isLight ? "#94A3B8" : "#3a3a5a", display: "flex", padding: 2,
+                        color: isLight ? "#94A3B8" : "#64748b", display: "flex", padding: 2,
                         transition: "color 0.2s",
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#4B5563" : "#7c7ca0"}
-                      onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#94A3B8" : "#3a3a5a"}
+                      onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#4B5563" : "#cbd5e1"}
+                      onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#94A3B8" : "#64748b"}
                     >
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -251,7 +302,7 @@ function Register() {
 
                   {/* Strength bar */}
                   {strength && (
-                    <div style={{ marginTop: 10 }}>
+                    <div style={{ marginTop: 8 }}>
                       <div style={{ height: 3, background: isLight ? "#e5e7eb" : "#1a1a2e", borderRadius: 3, overflow: "hidden" }}>
                         <div style={{
                           height: "100%",
@@ -264,7 +315,7 @@ function Register() {
                       </div>
                       <span style={{
                         color: strength.color, fontSize: "0.72rem",
-                        marginTop: 5, display: "block", fontWeight: 500,
+                        marginTop: 4, display: "block", fontWeight: 500,
                       }}>
                         {strength.label} password
                       </span>
@@ -285,7 +336,7 @@ function Register() {
                 )}
 
                 {/* Submit */}
-                <div style={fadeUp(4)}>
+                <div style={fadeUp(5)}>
                   <button
                     type="submit"
                     disabled={loading}
@@ -299,7 +350,7 @@ function Register() {
                       background: loading
                         ? "rgba(16,185,129,0.25)"
                         : "linear-gradient(135deg, #10b981 0%, #2563eb 100%)",
-                      color: loading ? "#4a7a6a" : "#fff",
+                      color: loading ? "#a7f3d0" : "#fff",
                       fontWeight: 600,
                       fontSize: "0.9rem",
                       display: "flex",
@@ -324,18 +375,18 @@ function Register() {
 
           {/* Footer */}
           <p style={{
-            ...fadeUp(4),
+            ...fadeUp(5),
             textAlign: "center",
-            color: isLight ? "#6B7280" : "#3a3a5a",
+            color: isLight ? "#6B7280" : "#64748b",
             fontSize: "0.82rem",
             marginTop: 22,
           }}>
             Already have an account?{" "}
             <Link
               to="/login"
-              style={{ color: isLight ? "#059669" : "#34a87a", textDecoration: "none", fontWeight: 600 }}
+              style={{ color: isLight ? "#059669" : "#34d399", textDecoration: "none", fontWeight: 600 }}
               onMouseEnter={(e) => e.currentTarget.style.color = isLight ? "#047857" : "#6ee7b7"}
-              onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#059669" : "#34a87a"}
+              onMouseLeave={(e) => e.currentTarget.style.color = isLight ? "#059669" : "#34d399"}
             >
               Sign in →
             </Link>

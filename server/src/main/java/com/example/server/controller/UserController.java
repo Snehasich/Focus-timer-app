@@ -21,23 +21,19 @@ public class UserController {
     public ResponseEntity<?> register(@RequestBody Users user) {
         try {
             service.register(user);
-            return ResponseEntity.ok("User registered");
+            return ResponseEntity.ok(Map.of("message", "User registered successfully"));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Users user) {
         try {
-            String token = service.verify(user);
-            String canonicalUsername = service.getCanonicalUsername(user.getUsername());
-            return ResponseEntity.ok(Map.of(
-                "token", token,
-                "username", canonicalUsername
-            ));
+            Map<String, Object> response = service.verify(user);
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(e.getMessage());
+            return ResponseEntity.status(401).body(Map.of("message", e.getMessage()));
         }
     }
 }

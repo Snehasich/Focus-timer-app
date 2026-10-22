@@ -1,7 +1,9 @@
 package com.example.server.service;
 
 import com.example.server.entity.Note;
+import com.example.server.entity.Users;
 import com.example.server.repo.NoteRepo;
+import com.example.server.repo.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,32 +12,50 @@ import java.util.List;
 public class NoteService {
 
     private final NoteRepo repository;
+    private final UserRepository userRepo;
 
-    public NoteService(NoteRepo repository) {
+    public NoteService(NoteRepo repository, UserRepository userRepo) {
         this.repository = repository;
+        this.userRepo = userRepo;
     }
 
-    // 🔐 GET NOTES FOR LOGGED-IN USER (Seeds 1 professional welcome note if brand new user)
-    public List<Note> getNotesForUser(String username) {
-        if (username == null || username.trim().isEmpty() || "anonymousUser".equalsIgnoreCase(username)) {
+    // 🔐 GET NOTES FOR LOGGED-IN USER (Isolated via user_id foreign key & email)
+    public List<Note> getNotesForUser(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty() || "anonymousUser".equalsIgnoreCase(identifier)) {
             return List.of();
         }
 
-        List<Note> userNotes = repository.findByUsernameIgnoreCaseOrderByIdDesc(username.trim());
+        String cleanIdentifier = identifier.trim();
+        Users user = userRepo.findByIdentifier(cleanIdentifier);
+
+        List<Note> userNotes;
+        if (user != null) {
+            userNotes = repository.findAllForUser(user.getId(), cleanIdentifier);
+        } else {
+            userNotes = repository.findByUsernameIgnoreCaseOrderByIdDesc(cleanIdentifier);
+        }
 
         // If new user has 0 notes, auto-create the professional Welcome Note in database
-        if (userNotes.isEmpty() && !"Guest".equalsIgnoreCase(username.trim())) {
-            Note welcomeNote = createDefaultWelcomeNote(username.trim());
+        if (userNotes.isEmpty() && !"Guest".equalsIgnoreCase(cleanIdentifier)) {
+            Note welcomeNote = createDefaultWelcomeNote(user, cleanIdentifier);
             return List.of(welcomeNote);
         }
 
         return userNotes;
     }
 
-    // ➕ CREATE NOTE
-    public Note createNote(Note note, String username) {
-        String owner = (username != null && !username.trim().isEmpty()) ? username.trim() : "Guest";
-        note.setUsername(owner);
+    // ➕ CREATE NOTE WITH FOREIGN KEY LINKAGE
+    public Note createNote(Note note, String identifier) {
+        String cleanIdentifier = (identifier != null && !identifier.trim().isEmpty()) ? identifier.trim() : "Guest";
+        Users user = userRepo.findByIdentifier(cleanIdentifier);
+
+        if (user != null) {
+            note.setUser(user);
+            note.setUsername(user.getEmail() != null ? user.getEmail() : user.getUsername());
+        } else {
+            note.setUsername(cleanIdentifier);
+        }
+
         if (note.getDate() == null || note.getDate().trim().isEmpty()) {
             note.setDate("Today");
         }
@@ -46,18 +66,14 @@ public class NoteService {
     }
 
     // ✏️ UPDATE NOTE (Strict user isolation: only owner can update)
-    public Note updateNote(Long id, Note updatedNote, String username) {
+    public Note updateNote(Long id, Note updatedNote, String identifier) {
         Note note = repository.findById(id).orElse(null);
 
         if (note == null) {
-            updatedNote.setUsername(username.trim());
-            return repository.save(updatedNote);
+            return createNote(updatedNote, identifier);
         }
 
-        // 🔐 Security verification: Prevent cross-user modification
-        if (!note.getUsername().equalsIgnoreCase(username.trim())) {
-            throw new SecurityException("Access denied: You do not own this note.");
-        }
+        verifyOwnership(note, identifier);
 
         if (updatedNote.getTitle() != null) note.setTitle(updatedNote.getTitle());
         if (updatedNote.getContent() != null) note.setContent(updatedNote.getContent());
@@ -70,20 +86,39 @@ public class NoteService {
     }
 
     // ❌ DELETE NOTE (Strict user isolation: only owner can delete)
-    public void deleteNote(Long id, String username) {
+    public void deleteNote(Long id, String identifier) {
         Note note = repository.findById(id).orElse(null);
         if (note != null) {
-            if (!note.getUsername().equalsIgnoreCase(username.trim())) {
-                throw new SecurityException("Access denied: You cannot delete another user's note.");
-            }
+            verifyOwnership(note, identifier);
             repository.delete(note);
         }
     }
 
+    private void verifyOwnership(Note note, String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            throw new SecurityException("Unauthorized request.");
+        }
+        String cleanIdentifier = identifier.trim();
+        Users user = userRepo.findByIdentifier(cleanIdentifier);
+
+        boolean ownsByUserId = (user != null && note.getUser() != null && note.getUser().getId() == user.getId());
+        boolean ownsByUsername = (note.getUsername() != null && note.getUsername().equalsIgnoreCase(cleanIdentifier));
+        boolean ownsByEmail = (user != null && user.getEmail() != null && user.getEmail().equalsIgnoreCase(note.getUsername()));
+
+        if (!ownsByUserId && !ownsByUsername && !ownsByEmail) {
+            throw new SecurityException("Access denied: You do not own this note.");
+        }
+    }
+
     // ── Helper to seed default professional welcome note ──
-    private Note createDefaultWelcomeNote(String username) {
+    private Note createDefaultWelcomeNote(Users user, String identifier) {
         Note welcomeNote = new Note();
-        welcomeNote.setUsername(username);
+        if (user != null) {
+            welcomeNote.setUser(user);
+            welcomeNote.setUsername(user.getEmail() != null ? user.getEmail() : user.getUsername());
+        } else {
+            welcomeNote.setUsername(identifier);
+        }
         welcomeNote.setTitle("Welcome to Notes Section");
         welcomeNote.setContent(
             "<h1>Welcome to Notes Section 📝</h1>" +

@@ -1,8 +1,13 @@
 package com.example.server.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "task", indexes = {
+    @Index(name = "idx_task_username", columnList = "username"),
+    @Index(name = "idx_task_user_id", columnList = "user_id")
+})
 public class Task {
 
     @Id
@@ -13,13 +18,23 @@ public class Task {
 
     private boolean completed;
 
-    // 🔐 VERY IMPORTANT → owner of task
+    // 🔐 Owner username / email for fast reference
     private String username;
 
-    // ✅ Getters & Setters
+    // 🔗 Relational Foreign Key to Users table
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private Users user;
+
+    public Task() {}
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getText() {
@@ -44,5 +59,13 @@ public class Task {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public Users getUser() {
+        return user;
+    }
+
+    public void setUser(Users user) {
+        this.user = user;
     }
 }

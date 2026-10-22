@@ -28,7 +28,7 @@ export default function Dashboard() {
   const prevFocusLoopRef = useRef(focusLoop);
 
   useEffect(() => {
-    setUsername(localStorage.getItem("username") || "User");
+    setUsername(localStorage.getItem("name") || localStorage.getItem("username") || "User");
     refreshStats();
   }, [refreshStats]);
 

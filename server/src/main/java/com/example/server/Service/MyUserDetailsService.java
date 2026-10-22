@@ -16,13 +16,15 @@ public class MyUserDetailsService implements UserDetailsService {
     private UserRepository repo;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            throw new UsernameNotFoundException("Identifier cannot be empty");
+        }
 
-        Users user = repo.findByTrimmedUsernameIgnoreCase(username != null ? username.trim() : "");
+        Users user = repo.findByIdentifier(identifier.trim());
 
-        if(user == null) {
-            System.out.println("user not found: " + username);
-            throw new UsernameNotFoundException("User Not Found");
+        if (user == null) {
+            throw new UsernameNotFoundException("User Not Found: " + identifier);
         }
 
         return new UserPrincipal(user);

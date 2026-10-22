@@ -14,6 +14,7 @@ const FocusTimer = () => {
   const {
     focusInitialTime: initialTime,
     setFocusInitialTime,
+    syncFocusInitialTime,
     focusTime: time,
     setFocusTime: setTime,
     isFocusRunning: isRunning,
@@ -38,14 +39,22 @@ const FocusTimer = () => {
       setIsRunning(false);
       setStartedAt(null);
     } else {
-      setStartedAt(Date.now() - (initialTime - time) * 1000);
+      const activeTotal = (initialTime && initialTime >= time && !(initialTime >= 1800 && time <= 300))
+        ? initialTime
+        : Math.max(time, 60);
+
+      if (syncFocusInitialTime && initialTime !== activeTotal) {
+        syncFocusInitialTime(activeTotal);
+      }
+      setStartedAt(Date.now() - (activeTotal - time) * 1000);
       setIsRunning(true);
     }
   };
 
   const handleReset = () => {
     setIsRunning(false);
-    setTime(initialTime);
+    const resetTo = (initialTime && !(initialTime >= 1800 && time <= 300)) ? initialTime : Math.max(time, 60);
+    setTime(resetTo);
     setStartedAt(null);
   };
 
@@ -55,12 +64,18 @@ const FocusTimer = () => {
     return `${m}:${s}`;
   };
 
-  const progress   = time / initialTime;
+  // ── Ring Calculation (Bright Blue Ring with Smooth Reduction) ──
+  const sessionTotal = (initialTime && initialTime >= time && !(initialTime >= 1800 && time <= 300))
+    ? initialTime
+    : Math.max(time, 60);
+
+  const progress = Math.max(0, Math.min(1, sessionTotal > 0 ? time / sessionTotal : 1));
   const dashOffset = CIRCUMFERENCE * (1 - progress);
 
-  const angle  = -90 + 360 * (1 - progress);
-  const dotX   = CENTER + RADIUS * Math.cos((angle * Math.PI) / 180);
-  const dotY   = CENTER + RADIUS * Math.sin((angle * Math.PI) / 180);
+  // Dot position at the leading head of the blue arc
+  const angle = -90 + 360 * progress;
+  const dotX  = CENTER + RADIUS * Math.cos((angle * Math.PI) / 180);
+  const dotY  = CENTER + RADIUS * Math.sin((angle * Math.PI) / 180);
 
   const isLight = theme === "light";
 
@@ -81,8 +96,8 @@ const FocusTimer = () => {
               <stop offset="0%" stopColor="#3b82f6" />
               <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
-            <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#3b82f6" floodOpacity="0.8" />
+            <filter id="blueGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#3b82f6" floodOpacity="0.75" />
             </filter>
           </defs>
 
@@ -94,7 +109,7 @@ const FocusTimer = () => {
             strokeWidth={9}
           />
 
-          {/* Main progress arc */}
+          {/* Main progress arc with bright blue color and subtle outer glow */}
           <circle
             cx={CENTER} cy={CENTER} r={RADIUS}
             fill="none"
@@ -105,15 +120,23 @@ const FocusTimer = () => {
             strokeDashoffset={dashOffset}
             transform={`rotate(-90 ${CENTER} ${CENTER})`}
             filter="url(#blueGlow)"
-            className="transition-[stroke-dashoffset] duration-1000 ease-linear"
+            style={{
+              transition: isRunning ? "stroke-dashoffset 1s linear" : "stroke-dashoffset 0.3s ease",
+              filter: "drop-shadow(0 0 6px rgba(59, 130, 246, 0.65))"
+            }}
           />
 
-          {/* Leading dot */}
-          {(isRunning || time < initialTime) && (
+          {/* Leading dot at the head of the arc */}
+          {isRunning && progress > 0.01 && progress < 0.999 && (
             <circle
-              cx={dotX} cy={dotY} r={6}
-              fill="#60a5fa"
-              style={{ filter: "drop-shadow(0 0 6px #3b82f6)" }}
+              cx={dotX} cy={dotY} r={5.5}
+              fill="#93c5fd"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              style={{ 
+                filter: "drop-shadow(0 0 6px #3b82f6)",
+                transition: "all 1s linear"
+              }}
             />
           )}
         </svg>

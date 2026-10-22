@@ -28,7 +28,7 @@ export const MobileHomeView = ({
     return "Good Evening";
   };
 
-  const username = localStorage.getItem("username") || "User";
+  const username = localStorage.getItem("name") || localStorage.getItem("username") || "User";
   const streak = parseInt(localStorage.getItem("focusflow_streak") || "1", 10);
 
   const handleNextTask = () => {

@@ -7,7 +7,14 @@ export const TimerProvider = ({ children }) => {
   // ── Focus Timer State ──
   const [focusInitialTime, setFocusInitialTimeState] = useState(() => {
     const saved = localStorage.getItem("app_focus_initial_time");
-    return saved ? parseInt(saved, 10) : 50 * 60;
+    const savedCurr = localStorage.getItem("app_focus_current_time");
+    const initSecs = saved ? parseInt(saved, 10) : 50 * 60;
+    const currSecs = savedCurr ? parseInt(savedCurr, 10) : null;
+    // Auto-heal if stale initial time (e.g. 3000s) vs short timer (e.g. 120s)
+    if (currSecs && currSecs <= 300 && initSecs >= 1800) {
+      return currSecs;
+    }
+    return initSecs;
   });
   const [focusTime, setFocusTime] = useState(() => {
     const saved = localStorage.getItem("app_focus_current_time");
@@ -72,12 +79,19 @@ export const TimerProvider = ({ children }) => {
   }, [isBreakRunning, breakStartedAt, breakTime]);
 
   const setFocusInitialTime = (seconds) => {
-    const validSecs = Math.max(60, Math.min(180 * 60, seconds));
+    const validSecs = Math.max(10, Math.min(180 * 60, seconds));
     localStorage.setItem("app_focus_initial_time", validSecs);
+    localStorage.setItem("app_focus_current_time", validSecs);
     setFocusInitialTimeState(validSecs);
     setFocusTime(validSecs);
     setIsFocusRunning(false);
     setFocusStartedAt(null);
+  };
+
+  const syncFocusInitialTime = (seconds) => {
+    const validSecs = Math.max(10, Math.min(180 * 60, seconds));
+    localStorage.setItem("app_focus_initial_time", validSecs);
+    setFocusInitialTimeState(validSecs);
   };
 
   const setBreakInitialTime = (seconds) => {
@@ -152,6 +166,7 @@ export const TimerProvider = ({ children }) => {
       value={{
         focusInitialTime,
         setFocusInitialTime,
+        syncFocusInitialTime,
         focusTime,
         setFocusTime,
         isFocusRunning,
